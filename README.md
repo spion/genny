@@ -22,7 +22,7 @@ Handle errors with `try`/`catch`, or as return results via
 `resume.nothrow`
 
 ```js
-enny.run(function* (resume) {
+genny.run(function* (resume) {
     // Throwing resume
     try { yield fs.readFile("test.js", resume()); } 
     catch (e) { /* handle the error */ }
@@ -56,7 +56,7 @@ var getLine = genny(function* (file, number, resume) {
     return data.toString().split('\n')[number];
 });
 
-myfunc('test.js', 2, function(err, lineContent) {
+getLine('test.js', 2, function(err, lineContent) {
     // thrown error propagates here automagically 
     // If the file actually exists, lineContent
     // will contain the second line
