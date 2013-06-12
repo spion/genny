@@ -1,0 +1,23 @@
+{
+  "name": "genny",
+  "version": "0.0.1",
+  "description": "The ultimate generator solution to callback hell",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "tap test/index.js"
+  },
+  "repository": "",
+  "keywords": [
+    "generator",
+    "callback",
+    "hell",
+    "yield",
+    "resume",
+    "suspend"
+  ],
+  "author": "spion",
+  "license": "MIT"
+}
