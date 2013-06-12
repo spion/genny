@@ -9,7 +9,10 @@
   "scripts": {
     "test": "tap test/index.js"
   },
-  "repository": "",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/spion/genny.git"
+  },
   "keywords": [
     "generator",
     "callback",
@@ -18,9 +21,17 @@
     "resume",
     "suspend"
   ],
-  "engines" : { 
-    "node" : ">=0.11.2" 
+  "engines": {
+    "node": ">=0.11.2"
   },
   "author": "spion",
-  "license": "MIT"
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "dependencies": {},
+  "devDependencies": {
+    "tap": "~0.4.3"
+  },
+  "bugs": {
+    "url": "https://github.com/spion/genny/issues"
+  }
 }
