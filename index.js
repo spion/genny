@@ -56,13 +56,15 @@ function genny(gen) {
             }
         }
 
-        Object.defineProperty(resume, 'throw', {
+        Object.defineProperty(resume, 't', {
             get: createResumer.bind(null, true) 
         });
-
-        Object.defineProperty(resume, 'nothrow', {
+        Object.defineProperty(resume, 'nt', {
             get: createResumer.bind(null, false) 
         });
+
+
+        resume.nothrow = createResumer.bind(null, false);
 
         args.unshift(resume);
         iterator = gen.apply(this, args);
