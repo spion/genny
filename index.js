@@ -10,6 +10,8 @@ function genny(gen) {
         else callback = args[args.length - 1];
         if (!(callback instanceof Function))
             callback = null;
+        else
+            args = args.slice(0, args.length - 1);
 
         var iterator;
         var nextYields = [];
@@ -41,7 +43,7 @@ function genny(gen) {
 
                 } else {
                     var sendargs = slice.call(arguments, sliceArgs);
-                    if (sendargs.length <= 1) 
+                    if (sendargs.length <= 1 && throwing) 
                         sendargs = sendargs[0];
                     try {
                         iterator.send(sendargs);
@@ -63,7 +65,7 @@ function genny(gen) {
 
         resume.nothrow = createResumer.bind(null, false);
 
-        args.unshift(resume);
+        args.push(resume);
         iterator = gen.apply(this, args);
         iterator.next();
         sendNextYield();

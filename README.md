@@ -44,7 +44,7 @@ can accept multiple arguments and a callback. The arguments will be passed
 to your generator right after `resume`.
 
 ```js
-var myfunc = genny(function* (resume, arg1) {
+var myfunc = genny(function* (arg1, resume) {
     assert.equal(arg1, 'arg1', 'argument passed')
     var err = yield errors(resume.t);
 });
