@@ -18,6 +18,9 @@
     "resume",
     "suspend"
   ],
+  "engines" : { 
+    "node" : ">=0.11.2" 
+  },
   "author": "spion",
   "license": "MIT"
 }
