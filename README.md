@@ -1,6 +1,8 @@
 # genny
 
-A tiny library that helps you use generators with node style callbacks, similar to suspend
+A tiny ES6 (harmony) library for node 0.11.2 and up that helps you 
+use generators with node style callbacks, similar to 
+[suspend](https://github.com/jmar777/suspend)
 
 # usage examples
 
@@ -14,8 +16,8 @@ genny(function* (resume) {
 })();
 ```
 
-Handle errors with try/catch, or as return results via
-resume.nothrow
+Handle errors with `try`/`catch`, or as return results via
+`resume.nothrow`
 
 ```js
 function errors(cb) {
@@ -23,25 +25,22 @@ function errors(cb) {
 }
 
 genny(function* (resume) {
+
     try { yield errors(resume()); } 
-    catch (e) {
-        // handle the oops error
-    }
+    catch (e) { /* handle the oops error */ }
+
+    var err = yield errors(resume.nothrow());
+    if (err) { /* handle oops error */ }
+
 })();
 
-genny(function* (resume) {
-    var err = yield errors(resume.nothrow());
-    if (err) {
-        // handle oops error
-    }
-})();
 ```
 Dont like nested parens? Want to keep things brief? Use `resume.t` 
 instead of `resume()` and `resume.nt` instead of `resume.nothrow()`
 
 Want to catch all uncaught exceptions? You can pass a callback to
-your newly created genny function. Infact, you can pass some arguments
-too, and they will be passed to your generator right after `resume`
+your newly created genny function. Infact, you can pass other arguments
+too, and they will be passed to your generator right after `resume`.
 
 ```js
 genny(function* (resume, arg1) {
@@ -51,6 +50,8 @@ genny(function* (resume, arg1) {
     // handle oops error
 });
 ```
+
+note: make sure that you pass the callback last.
 
 Your async functions call the callback with more than 2 arguments?
 Not a problem - genny will yield an array instead
@@ -70,6 +71,8 @@ genny(function* (resume) {
     var arg2 = res[2];
 });
 ```
+
+Look in `test/index.js` for more examples and tests.
 
 # thanks
 
