@@ -58,9 +58,10 @@ t.test(
 t.test(
     "handles functions that immediately call the callback in the same tick",
     genny(function* (resume, t) { 
+        var arr = [];
         for (var k = 0; k < 10; ++k)
-            yield nowait(k, resume());
-        t.ok(true, 'resumed all immediate calls');
+            arr.push(yield nowait(k, resume.t));
+        t.deepEquals(arr, [0,1,2,3,4,5,6,7,8,9], 'resumed all immediate calls');
         t.end();
     }));
 
