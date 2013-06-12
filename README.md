@@ -6,7 +6,9 @@ use generators with node style callbacks, similar to
 
 # usage examples
 
-Call your async functions with yield and pass them a resume function:
+Spawn a generator task. From within your task, call your async 
+functions with yield and pass them a resume function instead of
+a callback:
 
 ```js
 genny.run(function* (resume) {
@@ -55,7 +57,8 @@ myfunc('arg1', function(err) {
 note: make sure that you pass the callback last. 
 
 Your async functions call the callback with more than 2 arguments?
-Not a problem - genny's yield will return an array instead.
+Not a problem - the yield call from within your task will return 
+an array instead.
 
 ```js
 function returnsmore(callback) {
