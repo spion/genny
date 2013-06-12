@@ -23,15 +23,13 @@ Handle errors with `try`/`catch`, or as return results via
 function errors(cb) {
     setImmediate(cb.bind(this, new Error('oops')));
 }
-
 genny.run(function* (resume) {
-
+    // Throwing resume
     try { yield errors(resume()); } 
     catch (e) { /* handle the oops error */ }
-
+    // Non-throwing resume
     var err = yield errors(resume.nothrow());
     if (err) { /* handle oops error */ }
-
 });
 
 ```
