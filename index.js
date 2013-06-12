@@ -46,7 +46,10 @@ function genny(gen) {
                     if (sendargs.length <= 1 && throwing) 
                         sendargs = sendargs[0];
                     try {
-                        iterator.send(sendargs);
+                        var result = iterator.send(sendargs);
+                        if (result.done && callback)
+                            callback(null, result.value);
+
                         sendNextYield();
                     } catch (e) { // generator already running, delay send
                         nextYields.push(sendargs);
@@ -67,7 +70,10 @@ function genny(gen) {
 
         args.push(resume);
         iterator = gen.apply(this, args);
-        iterator.next();
+        var result = iterator.next();
+        if (result.done && callback)
+            callback(null, result.value);
+
         sendNextYield();
     }
 }

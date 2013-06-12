@@ -23,7 +23,9 @@ Handle errors with `try`/`catch`, or as return results via
 
 ```js
 function errors(cb) {
-    setImmediate(cb.bind(this, new Error('oops')));
+    setImmediate(function() {
+        cb(new Error('oops'));
+    });
 }
 genny.run(function* (resume) {
     // Throwing resume
@@ -43,7 +45,6 @@ Want to catch all uncaught exceptions? You can pass a callback argument to
 
 ```js
 genny.run(function* (resume) {
-    assert.equal(arg1, 'arg1', 'argument passed')
     var err = yield errors(resume.t);
 }, function(err) {
     // thrown error propagates here automagically 
@@ -58,14 +59,21 @@ passed to your generator right after `resume`.
 var myfunc = genny(function* (arg1, resume) {
     assert.equal(arg1, 'arg1', 'argument passed')
     var err = yield errors(resume.t);
+    return "This never happens"
 });
 
-myfunc('arg1', function(err) {
+myfunc('arg1', function(err, res) {
     // thrown error propagates here automagically 
+    // If for some reason there are no errors, 
+    // res == "This never happens"
 });
 ```
 
 note: make sure that you pass the callback last. 
+
+Notice that if you return a value at the end of your generator, it will
+be passed to that callback.
+
 
 Your async functions call the callback with more than 2 arguments?
 Not a problem - the yield call from within your task will return 

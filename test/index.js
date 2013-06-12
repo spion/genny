@@ -54,6 +54,32 @@ t.test(
     });
 
 t.test(
+    "calls callback with return result on exit", 
+    function(t) { 
+        genny.run(function* (resume) {
+            return 1;
+        }, function(err, res) {
+            t.equals(res, 1, "result present");
+            t.end();
+        });
+    });
+
+
+t.test(
+    "calls callback with return result on exit when return is after a yield", 
+    function(t) { 
+        genny.run(function* (resume) {
+            var x = yield normal(resume.t);
+            return x == "OK";
+        }, function(err, res) {
+            t.ok(res, "result is true");
+            t.end();
+        });
+    });
+
+
+
+t.test(
     "handles functions that immediately call the callback in the same tick",
     genny(function* (t, resume) { 
         var arr = [];
