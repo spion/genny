@@ -22,18 +22,13 @@ Handle errors with `try`/`catch`, or as return results via
 `resume.nothrow`
 
 ```js
-function errors(cb) {
-    setImmediate(function() {
-        cb(new Error('oops'));
-    });
-}
-genny.run(function* (resume) {
+enny.run(function* (resume) {
     // Throwing resume
-    try { yield errors(resume()); } 
-    catch (e) { /* handle the oops error */ }
+    try { yield fs.readFile("test.js", resume()); } 
+    catch (e) { /* handle the error */ }
     // Non-throwing resume always results with an array
-    var err_res = yield errors(resume.nothrow());
-    if (err_res[0]) { /* handle oops error */ }
+    var err_res = yield fs.readFile("test.js", resume.nothrow());
+    if (err_res[0]) { /* handle error */ }
 });
 
 ```
@@ -45,7 +40,7 @@ Want to catch all uncaught exceptions? You can pass a callback argument to
 
 ```js
 genny.run(function* (resume) {
-    var err = yield errors(resume.t);
+    var data = yield fs.readFile("test.js", resume.t);
 }, function(err) {
     // thrown error propagates here automagically 
 });
@@ -56,23 +51,22 @@ can accept multiple arguments and a callback. The arguments will be
 passed to your generator right after `resume`.
 
 ```js
-var myfunc = genny(function* (arg1, resume) {
-    assert.equal(arg1, 'arg1', 'argument passed')
-    var err = yield errors(resume.t);
-    return "This never happens"
+var getLine = genny(function* (file, number, resume) {
+    var data = yield fs.readFile(file, resume.t);
+    return data.toString().split('\n')[number];
 });
 
-myfunc('arg1', function(err, res) {
+myfunc('test.js', 2, function(err, lineContent) {
     // thrown error propagates here automagically 
-    // If for some reason there are no errors, 
-    // res == "This never happens"
+    // If the file actually exists, lineContent
+    // will contain the second line
 });
 ```
 
 note: make sure that you pass the callback last. 
 
-Notice that if you return a value at the end of your generator, it will
-be passed to that callback.
+Notice how if you return a value at the end of your generator, it will
+be passed as a result to the callback.
 
 
 Your async functions call the callback with more than 2 arguments?
