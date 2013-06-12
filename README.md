@@ -39,9 +39,20 @@ Dont like nested parens? Want to keep things brief? Use `resume.t`
 instead of `resume()` and `resume.nt` instead of `resume.nothrow()`
 
 Want to catch all uncaught exceptions? You can pass a callback argument to
-`genny.run`. Infact, you can use `genny` instead to create a function which
-can accept multiple arguments and a callback. The arguments will be passed 
-to your generator right after `resume`.
+`genny.run`:
+
+```js
+genny.run(function* (resume) {
+    assert.equal(arg1, 'arg1', 'argument passed')
+    var err = yield errors(resume.t);
+}, function(err) {
+    // thrown error propagates here automagically 
+});
+```
+
+You can also use `genny` instead to create a function which
+can accept multiple arguments and a callback. The arguments will be 
+passed to your generator right after `resume`.
 
 ```js
 var myfunc = genny(function* (arg1, resume) {
