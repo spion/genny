@@ -58,7 +58,7 @@ Not a problem - genny will yield an array instead
 
 ```js
 function returnsmore(callback) {
-    callback(null, 'arg1', arg2');
+    callback(null, 'arg1', 'arg2');
 }
 
 genny(function* (resume) {
