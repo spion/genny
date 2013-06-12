@@ -43,6 +43,7 @@ genny.run(function* (resume) {
     var data = yield fs.readFile("test.js", resume.t);
 }, function(err) {
     // thrown error propagates here automagically 
+    // because it was not caught.
 });
 ```
 
@@ -58,6 +59,7 @@ var getLine = genny(function* (file, number, resume) {
 
 getLine('test.js', 2, function(err, lineContent) {
     // thrown error propagates here automagically 
+    // because it was not caught.
     // If the file actually exists, lineContent
     // will contain the second line
 });
