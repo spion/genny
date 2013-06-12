@@ -29,9 +29,9 @@ genny.run(function* (resume) {
     // Throwing resume
     try { yield errors(resume()); } 
     catch (e) { /* handle the oops error */ }
-    // Non-throwing resume
-    var err = yield errors(resume.nothrow());
-    if (err) { /* handle oops error */ }
+    // Non-throwing resume always results with an array
+    var err_res = yield errors(resume.nothrow());
+    if (err_res[0]) { /* handle oops error */ }
 });
 
 ```
