@@ -1,12 +1,13 @@
+
+var slice = [].slice;
+
 function genny(gen) {
     return function start() {
-        var slice = [].slice;
         var args = slice.call(arguments);
 
-        if (args.length < 1) 
-            callback = null;
-        else 
-            var callback = args[args.length - 1];
+        var callback;
+        if (args.length < 1) callback = null;
+        else callback = args[args.length - 1];
         if (!(callback instanceof Function))
             callback = null;
 
@@ -34,21 +35,18 @@ function genny(gen) {
                 called = true;
                 if (err && throwing) try {
                     return iterator.throw(err);
-                } catch (e) {
-                    // if we have a callback passed, send it the error
-                    if (callback) callback(e);
-                    // otherwise throw.
-                    else throw e;
+                } catch (err) {
+                    if (callback) callback(err); 
+                    else throw e; // todo: check if this is a good idea
 
                 } else {
                     var sendargs = slice.call(arguments, sliceArgs);
-                    if (sendargs.length <= 1) {
+                    if (sendargs.length <= 1) 
                         sendargs = sendargs[0];
-                    }
                     try {
                         iterator.send(sendargs);
                         sendNextYield();
-                    } catch (e) { // already running, delay send
+                    } catch (e) { // generator already running, delay send
                         nextYields.push(sendargs);
                     }
                 }
@@ -63,7 +61,6 @@ function genny(gen) {
             get: createResumer.bind(null, false) 
         });
 
-
         resume.nothrow = createResumer.bind(null, false);
 
         args.unshift(resume);
@@ -74,3 +71,6 @@ function genny(gen) {
 }
 
 module.exports = genny;
+module.exports.run = function(gen, cb) {
+    genny(gen)(cb);
+}

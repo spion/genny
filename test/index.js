@@ -43,17 +43,15 @@ t.test(
     }));
 
 t.test(
-    "calls callback if present instead of throwing and pass arguments", 
+    "calls callback if present instead of throwing + genny.run", 
     function(t) { 
-        genny(function* (resume, arg1) {
-            t.equals(arg1, 'arg1', 'passed argument')
+        genny.run(function* (resume) {
             yield errors(resume());
-        })('arg1', function(err) {
+        }, function(err) {
             t.ok(err, "error present");
             t.end();
-        })
+        });
     });
-
 
 t.test(
     "handles functions that immediately call the callback in the same tick",
@@ -91,3 +89,4 @@ t.test(
             t.equals(res[2], 'r2', 'third argument is r2');
             t.end();
         }));
+
