@@ -19,7 +19,7 @@ function genny(gen) {
         function sendNextYield() {
             while (nextYields.length) {         
                 var ny = nextYields.pop();
-                iterator.send(ny);
+                iterator.next(ny);
             }
         }
 
@@ -46,7 +46,7 @@ function genny(gen) {
                     if (sendargs.length <= 1 && throwing) 
                         sendargs = sendargs[0];
                     try {
-                        var result = iterator.send(sendargs);
+                        var result = iterator.next(sendargs);
                         if (result.done && callback)
                             callback(null, result.value);
 
