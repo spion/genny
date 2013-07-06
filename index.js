@@ -1,17 +1,22 @@
 
 var slice = [].slice;
 
-function genny(gen) {
+function genny(opt, gen) {
     return function start() {
         var args = slice.call(arguments);
 
-        var callback;
-        if (args.length < 1) callback = null;
-        else callback = args[args.length - 1];
-        if (!(callback instanceof Function))
-            callback = null;
-        else
-            args = args.slice(0, args.length - 1);
+        var lastfn, callback, errback;
+        if (args.length < 1 || !opt.callback) 
+            lastfn = null;
+        else 
+            lastfn = args[args.length - 1];
+        if (!(lastfn instanceof Function))
+            lastfn = null;
+        if (opt.callback) 
+            callback = lastfn;
+        if (opt.errback)
+            errback = lastfn;
+
 
         var iterator;
         var nextYields = [];
@@ -19,10 +24,14 @@ function genny(gen) {
         function sendNextYield() {
             while (nextYields.length) {         
                 var ny = nextYields.pop();
-                iterator.next(ny);
+                check(iterator.next(ny));
             }
         }
 
+        function check(result) {
+            if (result.done && callback)
+                callback(null, result.value);
+        }
 
         var resume = createResumer.bind(null, true);
         var resumerId = 0;
@@ -32,24 +41,20 @@ function genny(gen) {
             // If its not a throwing resumer, dont slice the error argument
             var sliceArgs = throwing ? 1 : 0;
             var rid = ++resumerId;
-            return function resume(err) {
+            return function resume(err, res) {
                 if (called) return;
                 called = true;
                 if (err && throwing) try {
                     return iterator.throw(err);
                 } catch (err) {
-                    if (callback) callback(err); 
+                    if (errback) errback(err); 
                     else throw e; // todo: check if this is a good idea
 
                 } else {
-                    var sendargs = slice.call(arguments, sliceArgs);
-                    if (sendargs.length <= 1 && throwing) 
-                        sendargs = sendargs[0];
+                    if (throwing) var sendargs = res;
+                    else var sendargs = slice.call(arguments);
                     try {
-                        var result = iterator.next(sendargs);
-                        if (result.done && callback)
-                            callback(null, result.value);
-
+                        check(iterator.next(sendargs);
                         sendNextYield();
                     } catch (e) { // generator already running, delay send
                         nextYields.push(sendargs);
@@ -68,17 +73,19 @@ function genny(gen) {
 
         resume.nothrow = createResumer.bind(null, false);
 
-        args.push(resume);
+        args.unshift(resume);
         iterator = gen.apply(this, args);
-        var result = iterator.next();
-        if (result.done && callback)
-            callback(null, result.value);
-
+        check(iterator.next());
         sendNextYield();
     }
 }
 
-module.exports = genny;
-module.exports.run = function(gen, cb) {
-    genny(gen)(cb);
+exports.fn = genny.bind(null, {callback:true, errback: true});
+
+exports.listener = genny.bind(null, {callback: false, errback: false});
+
+exports.middleware = genny.bind(null, {callback: false, errback: true});
+
+exports.run = function(gen, cb) {
+    exports.fn(gen)(cb);
 }
