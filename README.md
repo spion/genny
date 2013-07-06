@@ -47,7 +47,9 @@ genny.run(function* (resume) {
 });
 ```
 
-You can also use `genny` instead to create a function which
+## creating callback functions
+
+You can also use `genny.fn` instead to create a function which
 can accept multiple arguments and a callback. The arguments will be 
 passed to your generator right after the first `resume` argument
 
@@ -68,8 +70,7 @@ getLine('test.js', 2, function(err, lineContent) {
 note: make sure that you pass the callback last. 
 
 Notice how if you return a value at the end of your generator, it will
-be passed as a result to the callback. If you return undefined, the
-callback will not be called.
+be passed as a result to the callback. 
 
 
 Your async functions call the callback with more than 2 arguments?
