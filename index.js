@@ -1,6 +1,9 @@
 
 var slice = [].slice;
 
+
+var hasSend = !!(function* () {})().send;
+
 function genny(opt, gen) {
     return function start() {
         var args = slice.call(arguments);
@@ -24,11 +27,16 @@ function genny(opt, gen) {
         function sendNextYield() {
             while (nextYields.length) {         
                 var ny = nextYields.pop();
-                check(iterator.next(ny));
+                advance(iterator, ny);
             }
         }
 
-        function check(result) {
+        function advance(iterator, args) {
+            var result;
+            if (hasSend && args !== undefined) 
+                result = iterator.send(args);
+            else 
+                result = iterator.next(args);
             if (result.done && callback)
                 callback(null, result.value);
         }
@@ -54,7 +62,7 @@ function genny(opt, gen) {
                     if (throwing) var sendargs = res;
                     else var sendargs = slice.call(arguments);
                     try {
-                        check(iterator.next(sendargs));
+                        advance(iterator, sendargs);
                         sendNextYield();
                     } catch (e) { // generator already running, delay send
                         nextYields.push(sendargs);
@@ -75,7 +83,7 @@ function genny(opt, gen) {
 
         args.unshift(resume);
         iterator = gen.apply(this, args);
-        check(iterator.next());
+        advance(iterator);
         sendNextYield();
     }
 }
