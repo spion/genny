@@ -54,7 +54,7 @@ function genny(opt, gen) {
                     if (throwing) var sendargs = res;
                     else var sendargs = slice.call(arguments);
                     try {
-                        check(iterator.next(sendargs);
+                        check(iterator.next(sendargs));
                         sendNextYield();
                     } catch (e) { // generator already running, delay send
                         nextYields.push(sendargs);
