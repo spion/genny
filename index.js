@@ -2,7 +2,7 @@
 var slice = [].slice;
 
 
-var hasSend = !!(function* () {})().send;
+var hasSend = !!(function* () { yield 1; })().send;
 
 function genny(opt, gen) {
     return function start() {
