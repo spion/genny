@@ -52,9 +52,9 @@ function genny(opt, gen) {
                 if (err && throwing) try {
                     return iterator.throw(err);
                 } catch (err) {
-                    if (errback) errback(err); 
-                    else throw e; // todo: check if this is a good idea
-
+                    if (errback) return errback(err); 
+                    // todo: check if this is a good idea
+                    else throw err; 
                 } else {
                     if (throwing) var sendargs = res;
                     else var sendargs = slice.call(arguments);
@@ -62,7 +62,13 @@ function genny(opt, gen) {
                         advance(iterator, sendargs);
                         sendNextYield();
                     } catch (e) { // generator already running, delay send
-                        nextYields.push(sendargs);
+                        if (e.message.indexOf('Generator') >= 0)
+                            nextYields.push(sendargs);
+                        else
+                            if (errback) return errback(e); 
+                            // todo: check if this is a good idea
+                            else throw e; 
+ 
                     }
                 }
 
