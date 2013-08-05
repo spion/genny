@@ -41,14 +41,9 @@ function genny(opt, gen) {
                 callback(null, result.value);
         }
 
-        var resume = createResumer.bind(null, true);
-        var resumerId = 0;
-
         function createResumer(throwing) {
             var called = false;
             // If its not a throwing resumer, dont slice the error argument
-            var sliceArgs = throwing ? 1 : 0;
-            var rid = ++resumerId;
             return function resume(err, res) {
                 if (called) return;
                 called = true;
@@ -72,14 +67,20 @@ function genny(opt, gen) {
             }
         }
 
+        var resume = function() { 
+            return createResumer(true);
+        }
+
         Object.defineProperty(resume, 't', {
-            get: createResumer.bind(null, true) 
+            get: function() { return createResumer(true); }
         });
         Object.defineProperty(resume, 'nt', {
-            get: createResumer.bind(null, false) 
+            get: function() { return createResumer(false); }
         });
 
-        resume.nothrow = createResumer.bind(null, false);
+        resume.nothrow = function() {
+           return createResumer(false);
+        }
 
         args.unshift(resume);
         iterator = gen.apply(this, args);
