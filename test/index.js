@@ -103,10 +103,13 @@ t.test(
 t.test(
     "handles evil functions that run callbacks multiple times",
     genny.fn(function* (resume, t) {
-        yield evil(resume.t);
-        var res = yield normal(resume.t);
-        t.equals(res, "OK", 'got result from non-evil function');
-        t.end();
+        try {
+            yield evil(resume.t);
+            var res = yield normal(resume.t);
+        } catch (e) {
+            t.ok(e, "evil functions cause throw");
+            t.end();
+        }
     }));
 
 t.test(

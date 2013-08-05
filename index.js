@@ -45,7 +45,9 @@ function genny(opt, gen) {
             var called = false;
             // If its not a throwing resumer, dont slice the error argument
             return function resume(err, res) {
-                if (called) return;
+                if (called) try {
+                    return iterator.throw(new Error("callback already called")); 
+                } catch (err) { }
                 called = true;
                 if (err && throwing) try {
                     return iterator.throw(err);
