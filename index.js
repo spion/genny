@@ -62,7 +62,7 @@ function genny(opt, gen) {
                         advance(iterator, sendargs);
                         sendNextYield();
                     } catch (e) { // generator already running, delay send
-                        if (e.message.indexOf('generator') >= 0)
+                        if (e.message.match(/generator/i))
                             nextYields.push(sendargs);
                         else
                             if (errback) return errback(e); 
