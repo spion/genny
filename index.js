@@ -4,6 +4,11 @@ var slice = [].slice;
 
 var hasSend = !!(function* () { yield 1; })().send;
 
+try {
+    var genstack = require('galaxy-stack');
+} catch (e) {
+    var genstack = null;
+}
 function genny(opt, gen) {
     return function start() {
         var args = slice.call(arguments);
@@ -23,6 +28,8 @@ function genny(opt, gen) {
 
         var iterator;
         var nextYields = [];
+
+        var lastStack = null;
 
         function sendNextYield() {
             while (nextYields.length) {         
@@ -50,7 +57,18 @@ function genny(opt, gen) {
                 } catch (err) { }
                 called = true;
                 if (err && throwing) try {
-                    return iterator.throw(err);
+                    if (genstack) {
+                        var frame = genstack.getStackFrame(iterator);
+                        var stackl = err.stack.split('\n');
+                        stackl.splice(1,0, 
+                                      '    at ' + frame.functionName
+                                      + ' (' + frame.scriptName 
+                                      + ':' + frame.lineNumber 
+                                      + ':' + frame.column + ')');
+                        err.stack = stackl.join('\n');
+                    }
+                    //console.log(frame);
+                   return iterator.throw(err);
                 } catch (err) {
                     if (errback) return errback(err); 
                     // todo: check if this is a good idea
@@ -96,6 +114,7 @@ function genny(opt, gen) {
         sendNextYield();
     }
 }
+
 
 exports.fn = genny.bind(null, {callback:true, errback: true});
 

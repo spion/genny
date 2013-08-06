@@ -27,7 +27,6 @@
   "author": "spion",
   "license": "MIT",
   "readmeFilename": "README.md",
-  "dependencies": {},
   "devDependencies": {
     "tap": "~0.4.3"
   },
