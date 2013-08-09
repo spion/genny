@@ -1,6 +1,9 @@
 var t = require('tap');
 
+
 var genny = require('../');
+
+genny.longStackSupport = true;
 
 function errors(cb) {
     setImmediate(function() {
@@ -106,8 +109,20 @@ t.test(
         try {
             yield evil(resume.t);
             var res = yield normal(resume.t);
-        } catch (e) {
+        } catch (e) {            
             t.ok(e, "evil functions cause throw");
+            t.end();
+        }
+    }));
+
+t.test(
+    "has a complete error stack",
+    genny.fn(function* completeStackTrace(resume, t) {
+        try {
+            yield errors(resume.t);
+        } catch (e) {
+            t.ok(~e.stack.indexOf('completeStackTrace'), 
+                 "error stack is complete");
             t.end();
         }
     }));

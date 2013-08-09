@@ -1,14 +1,8 @@
 
 var slice = [].slice;
 
-
 var hasSend = !!(function* () { yield 1; })().send;
 
-try {
-    var genstack = require('galaxy-stack');
-} catch (e) {
-    var genstack = null;
-}
 function genny(opt, gen) {
     return function start() {
         var args = slice.call(arguments);
@@ -27,13 +21,13 @@ function genny(opt, gen) {
 
 
         var iterator;
-        var nextYields = [];
+        var pending = [];
 
         var lastStack = null;
 
-        function sendNextYield() {
-            while (nextYields.length) {         
-                var ny = nextYields.pop();
+        function processPending() {
+            while (pending.length) {         
+                var ny = pending.pop();
                 advance(iterator, ny);
             }
         }
@@ -48,43 +42,51 @@ function genny(opt, gen) {
                 callback(null, result.value);
         }
 
+        function extendedStack(err, asyncStack) {
+            if (asyncStack && err.stack) {
+                var line = asyncStack.split('\n').slice(2,4).join('\n');
+                var stackLines = err.stack.split('\n');
+                err.stack += '\nFrom previous event:\n'
+                          + line;
+            }             
+            return err;
+        }
+
         function createResumer(throwing) {
             var called = false;
-            // If its not a throwing resumer, dont slice the error argument
+            if (exports.longStackSupport) try {
+                throw new Error();
+            } catch (e) {
+                var asyncStack = e.stack.substring(e.stack.indexOf("\n") + 1);
+            }
             return function resume(err, res) {
                 if (called) try {
-                    return iterator.throw(new Error("callback already called")); 
-                } catch (err) { }
+                    return iterator.throw(
+                        extendedStack(new Error("callback already called"),
+                                     asyncStack));
+                } catch (err) { 
+                    if (errback) return errback(err); 
+                    else throw err; 
+                }
                 called = true;
                 if (err && throwing) try {
-                    if (genstack) {
-                        var frame = genstack.getStackFrame(iterator);
-                        var stackl = err.stack.split('\n');
-                        stackl.splice(1,0, 
-                                      '    at ' + frame.functionName
-                                      + ' (' + frame.scriptName 
-                                      + ':' + frame.lineNumber 
-                                      + ':' + frame.column + ')');
-                        err.stack = stackl.join('\n');
-                    }
-                    //console.log(frame);
-                   return iterator.throw(err);
+                   return iterator.throw(
+                       extendedStack(err, asyncStack));
                 } catch (err) {
                     if (errback) return errback(err); 
-                    // todo: check if this is a good idea
                     else throw err; 
                 } else {
                     if (throwing) var sendargs = res;
                     else var sendargs = slice.call(arguments);
                     try {
                         advance(iterator, sendargs);
-                        sendNextYield();
-                    } catch (e) { // generator already running, delay send
-                        if (e.message.match(/generator/i))
-                            nextYields.push(sendargs);
+                        processPending();
+                    } catch (e) { 
+                        // generator already running, delay send
+                        if (/generator/i.test(e.message))
+                            pending.push(sendargs);
                         else
-                            if (errback) return errback(e); 
-                            // todo: check if this is a good idea
+                            if (errback) return errback(e);
                             else throw e; 
  
                     }
@@ -111,10 +113,11 @@ function genny(opt, gen) {
         args.unshift(resume);
         iterator = gen.apply(this, args);
         advance(iterator);
-        sendNextYield();
+        processPending();
     }
 }
 
+exports.longStackSupport = global.longStackSupport;
 
 exports.fn = genny.bind(null, {callback:true, errback: true});
 
