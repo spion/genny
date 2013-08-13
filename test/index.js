@@ -83,7 +83,7 @@ t.test(
     "calls callback with return result on exit when return is after a yield", 
     function(t) { 
         genny.run(function* (resume) {
-            var x = yield normal(resume.t);
+            var x = yield normal(resume());
             return x == "OK";
         }, function(err, res) {
             t.ok(res, "result is true");
@@ -98,7 +98,7 @@ t.test(
     genny.fn(function* (resume, t) { 
         var arr = [];
         for (var k = 0; k < 10; ++k)
-            arr.push(yield nowait(k, resume.t));
+            arr.push(yield nowait(k, resume()));
         t.deepEquals(arr, [0,1,2,3,4,5,6,7,8,9], 'resumed all immediate calls');
         t.end();
     }));
@@ -107,8 +107,8 @@ t.test(
     "handles evil functions that run callbacks multiple times",
     genny.fn(function* (resume, t) {
         try {
-            yield evil(resume.t);
-            var res = yield normal(resume.t);
+            yield evil(resume());
+            var res = yield normal(resume());
         } catch (e) {            
             t.ok(e, "evil functions cause throw");
             t.end();
@@ -119,7 +119,7 @@ t.test(
     "has a complete error stack",
     genny.fn(function* completeStackTrace(resume, t) {
         try {
-            yield errors(resume.t);
+            yield errors(resume());
         } catch (e) {
             t.ok(~e.stack.indexOf('completeStackTrace'), 
                  "error stack is complete");

@@ -77,7 +77,7 @@ function genny(opt, gen) {
             } else {
                 extendedStack = identity;
             }
-           var called = false;
+            var called = false;
             return function resume(err, res) {
                 if (called) try {
                     var e = new Error("callback already called");
@@ -119,7 +119,7 @@ function genny(opt, gen) {
             resume.nothrow = function() {
                return createResumer({throwing: false, previous: previous});
             }
-            resume.generator = function() {
+            resume.gen = function() {
                 if (exports.longStackSupport) try {
                     throw new Error();
                 } catch (e) {
@@ -129,9 +129,9 @@ function genny(opt, gen) {
                 }
                 return makeResume(extendedStack);
             };
-            Object.defineProperty(resume, 't',  { get: resume });
-            Object.defineProperty(resume, 'nt', { get: resume.nothrow });
-            Object.defineProperty(resume, 'g', { get: resume.generator });
+            //Object.defineProperty(resume, 't',  { get: resume });
+            //Object.defineProperty(resume, 'nt', { get: resume.nothrow });
+            //Object.defineProperty(resume, 'g', { get: resume.generator });
             return resume;
         }
         args.unshift(makeResume());
