@@ -127,6 +127,34 @@ t.test(
         }
     }));
 
+
+t.test(
+    "has a complete error stack even when invoking generators",
+    genny.fn(function* completeStackTrace2(resume, t) {
+
+        function* innerGenerator1(resume) {
+            yield errors(resume());
+        }
+        function* innerGenerator2(resume) {
+            yield* innerGenerator1(resume.gen());
+        } 
+        function* innerGenerator3(resume) {
+            yield* innerGenerator2(resume.gen());
+        }
+        try {
+            yield* innerGenerator3(resume.gen());
+        } catch (e) {
+            t.ok(~e.stack.indexOf('innerGenerator1'), 
+                 "stack contains inner generator 1");
+            t.ok(~e.stack.indexOf('innerGenerator3'), 
+                 "stack contains inner generator 3");
+ 
+            t.end();
+        }
+    }));
+
+
+
 t.test(
     "resume.nothrow yields arrays",
     genny.fn(function* (resume, t) {
@@ -137,7 +165,7 @@ t.test(
         }));
 
 t.test(
-    "listener doesnt send results to callback",
+    "listener doesn't send results to callback",
     function(t) {
         genny.listener(function* (resume, t, callback) {
             setImmediate(callback);
@@ -147,4 +175,19 @@ t.test(
             t.end();
         })
     });
+
+
+
+t.test(
+    "has a complete error stack",
+    genny.fn(function* completeStackTrace(resume, t) {
+        try {
+            yield errors(resume());
+        } catch (e) {
+            t.ok(~e.stack.indexOf('completeStackTrace'), 
+                 "error stack is complete");
+            t.end();
+        }
+    }));
+
 
