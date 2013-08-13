@@ -148,8 +148,12 @@ exports.listener = function(gen) {
 exports.middleware = function(gen) {
     var fn = genny(gen);
     return function(req, res, next) {
-        fn(req, res, next, function(err) {
-            if (next) next(err);
+        fn(req, res, next, function(err, res) {
+            if (next) 
+                if (err) 
+                    next(err);
+                else if (res == true) 
+                    next();
         });
     }
 }

@@ -196,7 +196,7 @@ t.test(
     "middleware doesn't send results to callback",
     function(t) {
         genny.middleware(function* (resume, req, res, next) {
-            return "resultFromMiddleware"; 
+            return true;
         })(t, t, function(err, res) {
             t.equals(res, undefined, 'listener has no result in callback');
             t.end();
