@@ -138,15 +138,10 @@ to get stack traces like these:
 Error: oops
     at Object._onImmediate (/home/spion/Documents/genny/test/index.js:10:12)
     at processImmediate [as _immediateCallback] (timers.js:325:15)
-From previous event:
+From generator:
     at innerGenerator1 (/home/spion/Documents/genny/test/index.js:136:26)
-From previous event:
     at innerGenerator2 (/home/spion/Documents/genny/test/index.js:139:43)
-    at innerGenerator3 (/home/spion/Documents/genny/test/index.js:142:20)
-From previous event:
     at innerGenerator3 (/home/spion/Documents/genny/test/index.js:142:43)
-    at Test.completeStackTrace2 (/home/spion/Documents/genny/test/index.js:145:20)
-From previous event:
     at Test.completeStackTrace2 (/home/spion/Documents/genny/test/index.js:145:43)
 ```
 

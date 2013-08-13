@@ -144,7 +144,7 @@ t.test(
         try {
             yield* innerGenerator3(resume.gen());
         } catch (e) {
-            //console.log(e.stack);
+            console.log(e.stack);
             t.ok(~e.stack.indexOf('innerGenerator1'), 
                  "stack contains inner generator 1");
             t.ok(~e.stack.indexOf('innerGenerator3'), 

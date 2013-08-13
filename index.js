@@ -12,7 +12,7 @@ function stackFilter(stack) {
 
 }
 
-function makeStackExtender(previous) {
+function makeStackExtender(previous, noheader) {
     try {
         throw new Error();
     } catch (e) {
@@ -20,12 +20,14 @@ function makeStackExtender(previous) {
             e.stack.substring(e.stack.indexOf("\n") + 1);
     } 
     return function(err) {
-        if (err.stack) 
-            err.stack += '\nFrom previous event:\n'
-                       + stackFilter(asyncStack);
+        if (err.stack) {
+            if (!noheader) err.stack += '\nFrom generator:'
+            err.stack += '\n' + stackFilter(asyncStack);
+        }
         if (previous) 
             err = previous(err);
-        return err;
+ 
+       return err;
     }
 }
 
@@ -114,7 +116,7 @@ function genny(gen) {
             }
             resume.gen = function() {
                 if (exports.longStackSupport) 
-                    var extendedStack = makeStackExtender(previous);
+                    var extendedStack = makeStackExtender(previous, true);
                 return makeResume(extendedStack);
             };
             return resume;
