@@ -64,6 +64,8 @@ function genny(opt, gen) {
                 return err;
             }
         }
+
+        function identity(err) { return err; }
  
         function createResumer(opt) {
             if (exports.longStackSupport) try {
@@ -72,21 +74,21 @@ function genny(opt, gen) {
                 var extendedStack = extendedStackBind(
                     e.stack.substring(e.stack.indexOf("\n") + 1), 
                     opt.previous);
+            } else {
+                extendedStack = identity;
             }
            var called = false;
             return function resume(err, res) {
                 if (called) try {
                     var e = new Error("callback already called");
-                    return iterator.throw(
-                        extendedStack ? extendedStack(e) : e);
+                    return iterator.throw(extendedStack(e));
                 } catch (err) { 
                     if (errback) return errback(err); 
                     else throw err; 
                 }
                 called = true;
                 if (err && opt.throwing) try {
-                    return iterator.throw(
-                        extendedStack ? extendedStack(err) : err);
+                    return iterator.throw(extendedStack(err));
                 } catch (err) {
                     if (errback) return errback(err); 
                     else throw err; 
