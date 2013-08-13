@@ -3,6 +3,15 @@ var slice = [].slice;
 
 var hasSend = !!(function* () { yield 1; })().send;
 
+
+function stackFilter(stack) {
+    return stack.split('\n').slice(1,4).filter(function(l) {
+        return !~l.indexOf(__filename)
+            && !~l.indexOf('GeneratorFunctionPrototype.next');
+    }).join('\n');
+
+}
+
 function genny(opt, gen) {
     return function start() {
         var args = slice.call(arguments);
@@ -42,41 +51,47 @@ function genny(opt, gen) {
                 callback(null, result.value);
         }
 
-        function extendedStack(err, asyncStack) {
-            if (asyncStack && err.stack) {
-                var line = asyncStack.split('\n').slice(2,4).join('\n');
-                var stackLines = err.stack.split('\n');
-                err.stack += '\nFrom previous event:\n'
-                          + line;
-            }             
-            return err;
-        }
 
-        function createResumer(throwing) {
-            var called = false;
+
+        function extendedStackBind(asyncStack, previous) {
+            return function(err) {
+                if (err.stack) 
+                    err.stack += '\nFrom previous event:\n'
+                              + stackFilter(asyncStack);
+                if (previous) 
+                    err = previous(err);
+ 
+                return err;
+            }
+        }
+ 
+        function createResumer(opt) {
             if (exports.longStackSupport) try {
                 throw new Error();
             } catch (e) {
-                var asyncStack = e.stack.substring(e.stack.indexOf("\n") + 1);
+                var extendedStack = extendedStackBind(
+                    e.stack.substring(e.stack.indexOf("\n") + 1), 
+                    opt.previous);
             }
+           var called = false;
             return function resume(err, res) {
                 if (called) try {
+                    var e = new Error("callback already called");
                     return iterator.throw(
-                        extendedStack(new Error("callback already called"),
-                                     asyncStack));
+                        extendedStack ? extendedStack(e) : e);
                 } catch (err) { 
                     if (errback) return errback(err); 
                     else throw err; 
                 }
                 called = true;
-                if (err && throwing) try {
-                   return iterator.throw(
-                       extendedStack(err, asyncStack));
+                if (err && opt.throwing) try {
+                    return iterator.throw(
+                        extendedStack ? extendedStack(err) : err);
                 } catch (err) {
                     if (errback) return errback(err); 
                     else throw err; 
                 } else {
-                    if (throwing) var sendargs = res;
+                    if (opt.throwing) var sendargs = res;
                     else var sendargs = slice.call(arguments);
                     try {
                         advance(iterator, sendargs);
@@ -87,30 +102,37 @@ function genny(opt, gen) {
                             pending.push(sendargs);
                         else
                             if (errback) return errback(e);
-                            else throw e; 
- 
+                        else throw e; 
+
                     }
                 }
 
             }
         }
 
-        var resume = function() { 
-            return createResumer(true);
+        function makeResume(previous) {
+            var resume = function() { 
+                return createResumer({throwing: true, previous: previous});
+            }
+            resume.nothrow = function() {
+               return createResumer({throwing: false, previous: previous});
+            }
+            resume.generator = function() {
+                if (exports.longStackSupport) try {
+                    throw new Error();
+                } catch (e) {
+                    var extendedStack = extendedStackBind(
+                        e.stack.substring(e.stack.indexOf("\n") + 1), 
+                        previous)
+                }
+                return makeResume(extendedStack);
+            };
+            Object.defineProperty(resume, 't',  { get: resume });
+            Object.defineProperty(resume, 'nt', { get: resume.nothrow });
+            Object.defineProperty(resume, 'g', { get: resume.generator });
+            return resume;
         }
-
-        Object.defineProperty(resume, 't', {
-            get: function() { return createResumer(true); }
-        });
-        Object.defineProperty(resume, 'nt', {
-            get: function() { return createResumer(false); }
-        });
-
-        resume.nothrow = function() {
-           return createResumer(false);
-        }
-
-        args.unshift(resume);
+        args.unshift(makeResume());
         iterator = gen.apply(this, args);
         advance(iterator);
         processPending();
