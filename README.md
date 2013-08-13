@@ -90,6 +90,13 @@ genny.run(function* (resume) {
 });
 ```
 
+Want to call a genny-compatible generator instead? Use:
+
+```
+yield* someGenerator(resume.gen(), args...)
+```
+
+
 Look in `test/index.js` for more examples and tests.
 
 # thanks
