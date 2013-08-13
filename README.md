@@ -32,15 +32,12 @@ genny.run(function* (resume) {
 });
 
 ```
-Dont like nested parens? Want to keep things brief? Use `resume.t` 
-instead of `resume()` and `resume.nt` instead of `resume.nothrow()`
-
 Want to catch all uncaught exceptions? You can pass a callback argument to
 `genny.run`:
 
 ```js
 genny.run(function* (resume) {
-    var data = yield fs.readFile("test.js", resume.t);
+    var data = yield fs.readFile("test.js", resume());
 }, function(err) {
     // thrown error propagates here automagically 
     // because it was not caught.
@@ -55,7 +52,7 @@ passed to your generator right after the first `resume` argument
 
 ```js
 var getLine = genny.fn(function* (resume, file, number) {
-    var data = yield fs.readFile(file, resume.t);
+    var data = yield fs.readFile(file, resume());
     return data.toString().split('\n')[number];
 });
 
@@ -83,10 +80,10 @@ function returnsmore(callback) {
 }
 
 genny.run(function* (resume) {
-    var res = yield returnsmore(resume.t);
+    var res = yield returnsmore(resume());
     var arg1 = res[0];
     var arg2 = res[1];
-    var nothrowres = yield returnsmore(resume.nt);
+    var nothrowres = yield returnsmore(resume.nothrow());
     var err = res[0];
     var arg1 = res[1];
     var arg2 = res[2];
