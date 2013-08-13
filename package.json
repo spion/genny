@@ -1,6 +1,6 @@
 {
   "name": "genny",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "A tiny ES6 (harmony) library for node 0.11.2+ that helps you use generators with node style callbacks.",
   "main": "index.js",
   "directories": {
