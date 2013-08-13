@@ -117,7 +117,7 @@ app.get('/test', genny.middleware(function* (resume, req, res) {
     if (yield isAuth(req, resume.t)) 
         return true; // will call next() 
     else
-        throw new CodedError(401, "Unauthorized); // will call next(err)
+        throw new CodedError(401, "Unauthorized"); // will call next(err)
 
     // or use return; and next() will not be called.
 });
