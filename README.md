@@ -138,8 +138,8 @@ function* innerGenerator3(resume) {
 yield* innerGenerator3(resume.gen());
 ```
 
-This results with CPU overhead of approximately 500% and the memory overhead 
-of approx 40%
+This results with CPU overhead of approximately 500% and memory overhead 
+of approximately 40%
 
 # more
 
