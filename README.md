@@ -102,7 +102,7 @@ genny.fn creates a callback-taking node function which requires its last
 argument to be a callback. To create a listener function use `genny.listener` 
 instead:
 
-```
+```js
 ee.on('event', genny.listener(function* (resume) { ... }));
 ```
 
