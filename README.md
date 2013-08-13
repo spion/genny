@@ -96,6 +96,33 @@ Want to call a genny-compatible generator instead? Use:
 yield* someGenerator(resume.gen(), args...)
 ```
 
+# listeners and middleware
+
+genny.fn creates a callback-taking node function which requires its last 
+argument to be a callback. To create a listener function use `genny.listener` 
+instead:
+
+```
+ee.on('event', genny.listener(function* (resume) { ... }));
+```
+
+Note that listeners currently ignore all errors and return values, but this 
+may change in the future.
+
+To create an express or connect middleware that properly forwards errors,
+use `genny.middleware`
+
+```js
+app.get('/test', genny.middleware(function* (resume, req, res) {
+    if (yield isAuth(req, resume.t)) 
+        return true; // will call next() 
+    else
+        throw new CodedError(401, "Unauthorized); // will call next(err)
+
+    // or use "return;" and next() will not be called.
+});
+```
+
 # debugging
 
 genny comes with longStackSupport that enables you to trace 
