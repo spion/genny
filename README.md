@@ -96,6 +96,52 @@ Want to call a genny-compatible generator instead? Use:
 yield* someGenerator(resume.gen(), args...)
 ```
 
+# debugging
+
+genny comes with longStackSupport that enables you to trace 
+errors across generators. Simply write:
+
+```js
+require('genny').longStackSupport = true
+```
+
+to get stack traces like these:
+
+```
+Error: oops
+    at Object._onImmediate (/home/spion/Documents/genny/test/index.js:10:12)
+    at processImmediate [as _immediateCallback] (timers.js:325:15)
+From previous event:
+    at innerGenerator1 (/home/spion/Documents/genny/test/index.js:136:26)
+From previous event:
+    at innerGenerator2 (/home/spion/Documents/genny/test/index.js:139:43)
+    at innerGenerator3 (/home/spion/Documents/genny/test/index.js:142:20)
+From previous event:
+    at innerGenerator3 (/home/spion/Documents/genny/test/index.js:142:43)
+    at Test.completeStackTrace2 (/home/spion/Documents/genny/test/index.js:145:20)
+From previous event:
+    at Test.completeStackTrace2 (/home/spion/Documents/genny/test/index.js:145:43)
+```
+
+for code like this:
+
+```js
+function* innerGenerator1(resume) {
+    yield errors(resume());
+}
+function* innerGenerator2(resume) {
+    yield* innerGenerator1(resume.gen());
+} 
+function* innerGenerator3(resume) {
+    yield* innerGenerator2(resume.gen());
+}
+yield* innerGenerator3(resume.gen());
+```
+
+This results with CPU overhead of approximately 500% and the memory overhead 
+of approx 40%
+
+# more
 
 Look in `test/index.js` for more examples and tests.
 
