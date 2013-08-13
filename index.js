@@ -12,27 +12,37 @@ function stackFilter(stack) {
 
 }
 
-function genny(opt, gen) {
+function makeStackExtender(previous) {
+    try {
+        throw new Error();
+    } catch (e) {
+        var asyncStack =
+            e.stack.substring(e.stack.indexOf("\n") + 1);
+    } 
+    return function(err) {
+        if (err.stack) 
+            err.stack += '\nFrom previous event:\n'
+                       + stackFilter(asyncStack);
+        if (previous) 
+            err = previous(err);
+        return err;
+    }
+}
+
+function genny(gen) {
     return function start() {
         var args = slice.call(arguments);
 
-        var lastfn, callback, errback;
-        if (args.length < 1 || !opt.callback) 
-            lastfn = null;
+        if (args.length < 1) 
+            var lastfn = null;
         else 
-            lastfn = args[args.length - 1];
+            var lastfn = args[args.length - 1];
         if (!(lastfn instanceof Function))
             lastfn = null;
-        if (opt.callback) 
-            callback = lastfn;
-        if (opt.errback)
-            errback = lastfn;
-
+        
 
         var iterator;
         var pending = [];
-
-        var lastStack = null;
 
         function processPending() {
             while (pending.length) {         
@@ -47,66 +57,49 @@ function genny(opt, gen) {
                 result = iterator.send(args);
             else 
                 result = iterator.next(args);
-            if (result.done && callback)
-                callback(null, result.value);
+            if (result.done && lastfn)
+                lastfn(null, result.value);
         }
 
 
-
-        function extendedStackBind(asyncStack, previous) {
-            return function(err) {
-                if (err.stack) 
-                    err.stack += '\nFrom previous event:\n'
-                              + stackFilter(asyncStack);
-                if (previous) 
-                    err = previous(err);
- 
-                return err;
+        function throwAt(iterator, err) {
+            try {
+                iterator.throw(err);
+            } catch(e) {
+                if (lastfn) return lastfn(err); 
+                else throw err; 
             }
         }
 
         function identity(err) { return err; }
  
         function createResumer(opt) {
-            if (exports.longStackSupport) try {
-                throw new Error();
-            } catch (e) {
-                var extendedStack = extendedStackBind(
-                    e.stack.substring(e.stack.indexOf("\n") + 1), 
-                    opt.previous);
-            } else {
+            if (exports.longStackSupport) 
+                extendedStack = makeStackExtender(opt.previous);
+            else 
                 extendedStack = identity;
-            }
+
             var called = false;
             return function resume(err, res) {
-                if (called) try {
-                    var e = new Error("callback already called");
-                    return iterator.throw(extendedStack(e));
-                } catch (err) { 
-                    if (errback) return errback(err); 
-                    else throw err; 
-                }
+                if (called) 
+                    return throwAt(iterator, extendedStack(
+                        new Error("callback already called")));
                 called = true;
-                if (err && opt.throwing) try {
-                    return iterator.throw(extendedStack(err));
-                } catch (err) {
-                    if (errback) return errback(err); 
-                    else throw err; 
-                } else {
-                    if (opt.throwing) var sendargs = res;
-                    else var sendargs = slice.call(arguments);
-                    try {
-                        advance(iterator, sendargs);
-                        processPending();
-                    } catch (e) { 
-                        // generator already running, delay send
-                        if (/generator/i.test(e.message))
-                            pending.push(sendargs);
-                        else
-                            if (errback) return errback(e);
-                        else throw e; 
+                if (err && opt.throwing) 
+                    return throwAt(iterator, extendedStack(err));
+                    
+                var sendargs = opt.throwing ? res : slice.call(arguments);
+                try {
+                    advance(iterator, sendargs);
+                    processPending();
+                } catch (e) { 
+                    // generator already running, delay send
+                    if (/generator/i.test(e.message))
+                        pending.push(sendargs);
+                    else if (lastfn) 
+                        return lastfn(e);
+                    else throw e; 
 
-                    }
                 }
 
             }
@@ -120,34 +113,46 @@ function genny(opt, gen) {
                return createResumer({throwing: false, previous: previous});
             }
             resume.gen = function() {
-                if (exports.longStackSupport) try {
-                    throw new Error();
-                } catch (e) {
-                    var extendedStack = extendedStackBind(
-                        e.stack.substring(e.stack.indexOf("\n") + 1), 
-                        previous)
-                }
+                if (exports.longStackSupport) 
+                    var extendedStack = makeStackExtender(previous);
                 return makeResume(extendedStack);
             };
-            //Object.defineProperty(resume, 't',  { get: resume });
-            //Object.defineProperty(resume, 'nt', { get: resume.nothrow });
-            //Object.defineProperty(resume, 'g', { get: resume.generator });
             return resume;
         }
         args.unshift(makeResume());
         iterator = gen.apply(this, args);
-        advance(iterator);
+        try {
+            advance(iterator);
+        } catch (e) {
+            if (lastfn) 
+                return lastfn(e);
+            else throw e;
+        }
         processPending();
     }
 }
 
 exports.longStackSupport = global.longStackSupport;
 
-exports.fn = genny.bind(null, {callback:true, errback: true});
+exports.fn = genny;
 
-exports.listener = genny.bind(null, {callback: false, errback: false});
+exports.listener = function(gen) {
+    var fn = genny(gen);
+    return function() {
+        var args = [].slice.call(arguments);
+        args.push(function ignoreListener(err, res) {});
+        fn.apply(this, args);        
+    }
+}
 
-exports.middleware = genny.bind(null, {callback: false, errback: true});
+exports.middleware = function(gen) {
+    var fn = genny(gen);
+    return function(req, res, next) {
+        fn(req, res, next, function(err) {
+            if (next) next(err);
+        });
+    }
+}
 
 exports.run = function(gen, cb) {
     exports.fn(gen)(cb);

@@ -144,6 +144,7 @@ t.test(
         try {
             yield* innerGenerator3(resume.gen());
         } catch (e) {
+            //console.log(e.stack);
             t.ok(~e.stack.indexOf('innerGenerator1'), 
                  "stack contains inner generator 1");
             t.ok(~e.stack.indexOf('innerGenerator3'), 
@@ -152,8 +153,6 @@ t.test(
             t.end();
         }
     }));
-
-
 
 t.test(
     "resume.nothrow yields arrays",
@@ -164,14 +163,29 @@ t.test(
             t.end();
         }));
 
+
+        
+        
 t.test(
     "listener doesn't send results to callback",
     function(t) {
-        genny.listener(function* (resume, t, callback) {
-            setImmediate(callback);
-            return true; 
-        })(t, function(err, res) {
-            t.notOk(res, 'listener has no result in callback');
+        genny.listener(function* (resume, callback) {
+            setTimeout(callback, 1);
+            return "resultFromGenerator"; 
+        })(function(err, res) {
+            t.equals(res, undefined, 'listener has no result in callback');
+            t.end();
+        })
+    });
+
+t.test(
+    "listener doesn't send errors to callback",
+    function(t) {
+        genny.listener(function* (resume, callback) {
+            setTimeout(callback, 1);
+            throw new Error("ErrorFromGenerator");
+        })(function(err) {
+            t.notOk(err, 'listener has no error in callback');
             t.end();
         })
     });
@@ -179,15 +193,24 @@ t.test(
 
 
 t.test(
-    "has a complete error stack",
-    genny.fn(function* completeStackTrace(resume, t) {
-        try {
-            yield errors(resume());
-        } catch (e) {
-            t.ok(~e.stack.indexOf('completeStackTrace'), 
-                 "error stack is complete");
+    "middleware doesn't send results to callback",
+    function(t) {
+        genny.middleware(function* (resume, req, res, next) {
+            return "resultFromMiddleware"; 
+        })(t, t, function(err, res) {
+            t.equals(res, undefined, 'listener has no result in callback');
             t.end();
-        }
-    }));
+        })
+    });
 
+t.test(
+    "middleware does send errors to callback",
+    function(t) {
+        genny.middleware(function* (resume, req, res, next) {
+            throw new Error("Oops");
+        })(t, t, function(err) {
+            t.ok(err, 'middleware has error in callback');
+            t.end();
+        })
+    });
 
