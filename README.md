@@ -27,14 +27,20 @@ Handle errors with `try`/`catch`, or as return results via
 ```js
 genny.run(function* (resume) {
     // Throwing resume
-    try { yield fs.readFile("test.js", resume()); } 
-    catch (e) { /* handle the error */ }
-    // Non-throwing resume always results with an array
+    try { 
+        yield fs.readFile("test.js", resume()); 
+    } 
+    catch (e) { // handle error
+        console.error("Error reading file", e); 
+    }
+    // Non-throwing resume, result is an array.
     var err_res = yield fs.readFile("test.js", resume.nothrow());
-    if (err_res[0]) { /* handle error */ }
+    if (err_res[0]) { // handle error
+        console.error("Error reading file", err_res[0]); 
+    }
 });
-
 ```
+
 Want to catch all uncaught exceptions? You can pass a callback argument to
 `genny.run`:
 
@@ -42,8 +48,10 @@ Want to catch all uncaught exceptions? You can pass a callback argument to
 genny.run(function* (resume) {
     var data = yield fs.readFile("test.js", resume());
 }, function(err) {
-    // thrown error propagates here automagically 
+    // thrown error propagates here automatically 
     // because it was not caught.
+    if (err)
+        console.error("Error reading file", err);
 });
 ```
 
@@ -59,23 +67,24 @@ var getLine = genny.fn(function* (resume, file, number) {
     return data.toString().split('\n')[number];
 });
 
-getLine('test.js', 2, function(err, lineContent) {
+getLine('test.js', 2, function(err, line) {
     // thrown error propagates here automagically 
     // because it was not caught.
     // If the file actually exists, lineContent
     // will contain the second line
+    if (err) 
+        console.error("Error reading line", err);
 });
 ```
 
-note: make sure that you pass the callback last. 
+The result is a function that takes the specified arguments plus
+a standard node style callback. If you return a value at the end of your 
+generator, it is passed as the result argument to the callback. 
 
-Notice how if you return a value at the end of your generator, it will
-be passed as a result to the callback. 
+## multi-argument callbacks, calling generators
 
-
-Your async functions call the callback with more than 2 arguments?
-Not a problem - the yield call from within your task will return 
-an array instead.
+If an async functions calls the callback with more than 2 arguments, an
+array will be returned from the yield:
 
 ```js
 function returnsmore(callback) {
@@ -93,7 +102,7 @@ genny.run(function* (resume) {
 });
 ```
 
-Want to call a genny-compatible generator instead? Use:
+Use yield* and resume.gen() to call a genny-compatible generator:
 
 ```
 yield* someGenerator(resume.gen(), args...)
