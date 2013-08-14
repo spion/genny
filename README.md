@@ -7,16 +7,19 @@ use generators with node style callbacks, similar to
 # usage examples
 
 Spawn a generator task. From within your task, call your async 
-functions with yield and pass them a resume function instead of
-a callback:
+functions with yield. Instead of a callback function, pass them 
+a generated resume function:
 
 ```js
 genny.run(function* (resume) {
     console.log("Hello");
-    yield setInterval(resume(), 1000);
+    yield setTimeout(resume(), 1000);
     console.log("World");
 });
 ```
+
+Genny passes a function that can make resume functions to your generator. Its 
+always the first argument.
 
 Handle errors with `try`/`catch`, or as return results via
 `resume.nothrow`
@@ -106,8 +109,8 @@ instead:
 ee.on('event', genny.listener(function* (resume) { ... }));
 ```
 
-Note that listeners currently ignore all errors and return values, but this 
-may change in the future.
+Listeners currently ignore all errors and return values, but this may change 
+in the future.
 
 To create an express or connect middleware that properly forwards errors,
 use `genny.middleware`
