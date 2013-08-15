@@ -4,6 +4,10 @@ var slice = [].slice;
 var hasSend = !!(function* () { yield 1; })().send;
 
 
+var wq = require('./lib/work-queue'),
+    WorkQueue = wq.WorkQueue,
+    WorkItem = wq.WorkItem;
+
 function stackFilter(stack) {
     return stack.split('\n').slice(1,4).filter(function(l) {
         return !~l.indexOf(__filename)
@@ -42,25 +46,27 @@ function genny(gen) {
             lastfn = null;
         
         var iterator;
-        var pending = [];
+        var queue = new WorkQueue();
+
 
         function processPending() {
-            while (pending.length) {         
-                var ny = pending.pop();
-                advance(iterator, ny);
+            //console.log("Process pending");
+            var item, result;
+            //console.log(queue);
+            while (queue.check()) {
+                //console.log("Next item: ", item);
+                var val = queue.next.value;
+                if (hasSend && item.value !== undefined) 
+                    result = iterator.send(val);
+                else 
+                    result = iterator.next(val);
+
+                queue.advance();
+                //console.log("Generator yielded!");
+                if (result.done && lastfn)
+                    lastfn(null, result.value);
             }
         }
-
-        function advance(iterator, args) {
-            var result;
-            if (hasSend && args !== undefined) 
-                result = iterator.send(args);
-            else 
-                result = iterator.next(args);
-            if (result.done && lastfn)
-                lastfn(null, result.value);
-        }
-
 
         function throwAt(iterator, err) {
             try {
@@ -80,27 +86,32 @@ function genny(gen) {
             else 
                 extendedStack = identity;
 
-            var called = false;
+            var item = new WorkItem();
+            queue.add(item);
+
             return function resume(err, res) {
-                if (called) 
+
+                if (item.complete) 
                     return throwAt(iterator, extendedStack(
                         new Error("callback already called")));
-                called = true;
-                if (err && opt.throwing) 
+
+                item.complete = true;
+                if (err && opt.throwing) {
+                    queue.empty();
                     return throwAt(iterator, extendedStack(err));
-                    
-                var sendargs = opt.throwing ? res : slice.call(arguments);
+                }
+
+                item.value = opt.throwing ? res : slice.call(arguments);
+
                 try {
-                    advance(iterator, sendargs);
                     processPending();
                 } catch (e) { 
-                    // generator already running, delay send
-                    if (/generator/i.test(e.message))
-                        pending.push(sendargs);
-                    else if (lastfn) 
-                        return lastfn(e);
-                    else throw e; 
+                    
+                    if (/generator/i.test(e.message)) return;
 
+                    queue.empty();
+                    if (lastfn) return lastfn(e);
+                    else throw e; 
                 }
 
             }
@@ -126,14 +137,20 @@ function genny(gen) {
         else
             args.push(makeResume());
         iterator = gen.apply(this, args);
+
+        // first item sent to generator is undefined
+        var item = new WorkItem()
+        item.complete = true;
+        queue.add(item); 
+
         try {
-            advance(iterator);
+            processPending();
         } catch (e) {
-            if (lastfn) 
-                return lastfn(e);
+            queue.empty();
+            if (lastfn) return lastfn(e);
             else throw e;
         }
-        processPending();
+        
     }
 }
 
