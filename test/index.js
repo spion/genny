@@ -47,6 +47,18 @@ t.test(
         t.end();    
     }));
 
+
+t.test(
+    "correct parallel order", 
+    genny.fn(function* (t, resume) {
+        normal(resume());
+        setImmediate(resume());
+        var ok = yield resume, nothing = yield resume;
+        t.equals(ok, 'OK')
+        t.equals(nothing, undefined);
+        t.end();    
+    }));
+
 t.test(
     "throws error", 
     genny.fn(function* (t, resume) {
@@ -64,7 +76,6 @@ t.test(
         genny.run(function* (resume) {
             yield errors(resume());
         }, function(err, res) {
-            console.log(err, "OK");
             t.ok(err, "error present");
             t.end();
         });
@@ -83,6 +94,7 @@ t.test(
     });
 
 
+
 t.test(
     "calls callback with return result on exit when return is after a yield", 
     function(t) { 
@@ -90,7 +102,6 @@ t.test(
             var x = yield normal(resume());
             return x == "OK";
         }, function(err, res) {
-            console.log(err, res);
             t.ok(res, "result is true");
             t.end();
         });
@@ -150,7 +161,7 @@ t.test(
         try {
             yield* innerGenerator3(resume.gen());
         } catch (e) {
-            console.log(e.stack);
+            //console.log(e.stack);
             t.ok(~e.stack.indexOf('innerGenerator1'), 
                  "stack contains inner generator 1");
             t.ok(~e.stack.indexOf('innerGenerator3'), 
@@ -219,4 +230,6 @@ t.test(
             t.end();
         })
     });
+
+
 
