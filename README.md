@@ -175,7 +175,7 @@ To create an express or connect middleware that properly forwards errors,
 use `genny.middleware`
 
 ```js
-app.get('/test', genny.middleware(function* (resume, req, res) {
+app.get('/test', genny.middleware(function* (req, res, resume) {
     if (yield isAuth(req, resume.t)) 
         return true; // will call next() 
     else

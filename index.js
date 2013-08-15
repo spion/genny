@@ -106,7 +106,7 @@ function genny(gen) {
                 try {
                     processPending();
                 } catch (e) { 
-                    
+
                     if (/generator/i.test(e.message)) return;
 
                     queue.empty();
@@ -172,7 +172,7 @@ exports.listener = function(gen) {
 exports.middleware = function(gen) {
     var fn = genny(gen);
     return function(req, res, next) {
-        fn(req, res, next, function(err, res) {
+        fn(req, res, function(err, res) {
             if (next) 
                 if (err) 
                     next(err);
