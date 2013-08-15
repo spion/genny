@@ -70,7 +70,7 @@ genny.run(function* (resume) {
 The order of yield results is guaranteed to be the same as the order of the
 `resume()` callback constructors. Feel free to use it in loops too:
 
-```ks
+```js
 genny.run(function* (resume) {
     // read files in parallel
     for (var k = 0; k < files.length; ++k) 
