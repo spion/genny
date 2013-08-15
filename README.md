@@ -1,14 +1,13 @@
 # genny
 
-A tiny ES6 (harmony) library for node 0.11.2 and up that helps you 
-use generators with node style callbacks, similar to 
+A tiny ES6 (harmony) library for node 0.11.2 and up that helps you use 
+generators with node style callbacks, similar to 
 [suspend](https://github.com/jmar777/suspend)
 
 # usage examples
 
-Spawn a generator task. From within your task, call your async 
-functions with yield. Instead of a callback function, pass them 
-a generated resume function:
+Spawn a generator task. From within your task, call your async functions with 
+yield. Instead of a callback function, pass them a generated resume function:
 
 ```js
 genny.run(function* (resume) {
@@ -19,7 +18,7 @@ genny.run(function* (resume) {
 ```
 
 Genny passes a function that can make resume functions to your generator. Its 
-always the first argument.
+always the last argument.
 
 Handle errors with `try`/`catch`, or as return results via
 `resume.nothrow`
@@ -59,10 +58,11 @@ genny.run(function* (resume) {
 
 You can also use `genny.fn` instead to create a function which
 can accept multiple arguments and a callback. The arguments will be 
-passed to your generator right after the first `resume` argument
+passed to your generator, but instead of the callback, you will get
+genny's `resume`
 
 ```js
-var getLine = genny.fn(function* (resume, file, number) {
+var getLine = genny.fn(function* (file, number, resume) {
     var data = yield fs.readFile(file, resume());
     return data.toString().split('\n')[number];
 });
@@ -102,15 +102,15 @@ genny.run(function* (resume) {
 });
 ```
 
-Use yield* and resume.gen() to call a genny-compatible generator:
+Use `yield*` and `resume.gen()` to call a genny-compatible generator:
 
 ```
-yield* someGenerator(resume.gen(), args...)
+yield* someGenerator(args..., resume.gen())
 ```
 
 # listeners and middleware
 
-genny.fn creates a callback-taking node function which requires its last 
+`genny.fn` creates a callback-taking node function which requires its last 
 argument to be a callback. To create a listener function use `genny.listener` 
 instead:
 
@@ -173,7 +173,10 @@ yield* innerGenerator3(resume.gen());
 ```
 
 This results with CPU overhead of approximately 500% and memory overhead 
-of approximately 40%
+of approximately 40%. 
+
+In the future, the overhead will probably be eliminated in node but not in 
+browsers.
 
 # more
 

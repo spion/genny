@@ -13,10 +13,11 @@ function stackFilter(stack) {
 }
 
 function makeStackExtender(previous, noheader) {
+    var asyncStack;
     try {
         throw new Error();
     } catch (e) {
-        var asyncStack =
+        asyncStack =
             e.stack.substring(e.stack.indexOf("\n") + 1);
     } 
     return function(err) {
@@ -26,23 +27,20 @@ function makeStackExtender(previous, noheader) {
         }
         if (previous) 
             err = previous(err);
- 
        return err;
     }
 }
 
 function genny(gen) {
     return function start() {
-        var args = slice.call(arguments);
+        var args = slice.call(arguments), lastfn;
 
-        if (args.length < 1) 
-            var lastfn = null;
-        else 
-            var lastfn = args[args.length - 1];
+        if (args.length < 1) lastfn = null;
+        else lastfn = args[args.length - 1];
+
         if (!(lastfn instanceof Function))
             lastfn = null;
         
-
         var iterator;
         var pending = [];
 
@@ -76,6 +74,7 @@ function genny(gen) {
         function identity(err) { return err; }
  
         function createResumer(opt) {
+            var extendedStack;
             if (exports.longStackSupport) 
                 extendedStack = makeStackExtender(opt.previous);
             else 
@@ -115,13 +114,17 @@ function genny(gen) {
                return createResumer({throwing: false, previous: previous});
             }
             resume.gen = function() {
+                var extendedStack;
                 if (exports.longStackSupport) 
-                    var extendedStack = makeStackExtender(previous, true);
+                    extendedStack = makeStackExtender(previous, true);
                 return makeResume(extendedStack);
             };
             return resume;
         }
-        args.unshift(makeResume());
+        if (lastfn) 
+            args[args.length - 1] = makeResume();
+        else
+            args.push(makeResume());
         iterator = gen.apply(this, args);
         try {
             advance(iterator);
@@ -133,6 +136,8 @@ function genny(gen) {
         processPending();
     }
 }
+
+var exports = module.exports = genny;
 
 exports.longStackSupport = global.longStackSupport;
 
@@ -154,7 +159,7 @@ exports.middleware = function(gen) {
             if (next) 
                 if (err) 
                     next(err);
-                else if (res == true) 
+                else if (res === true) 
                     next();
         });
     }

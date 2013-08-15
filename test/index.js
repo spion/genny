@@ -1,3 +1,5 @@
+/*jshint esnext: true */
+
 var t = require('tap');
 
 
@@ -39,7 +41,7 @@ function multiresult(cb) {
 
 t.test(
     "simple test", 
-    genny.fn(function* (resume, t) {
+    genny.fn(function* (t, resume) {
         yield setImmediate(resume());
         t.ok(true, 'resume success');
         t.end();    
@@ -47,7 +49,7 @@ t.test(
 
 t.test(
     "throws error", 
-    genny.fn(function* (resume, t) {
+    genny.fn(function* (t, resume) {
         try {
             yield errors(resume());
         } catch (e) {
@@ -61,7 +63,8 @@ t.test(
     function(t) { 
         genny.run(function* (resume) {
             yield errors(resume());
-        }, function(err) {
+        }, function(err, res) {
+            console.log(err, "OK");
             t.ok(err, "error present");
             t.end();
         });
@@ -71,6 +74,7 @@ t.test(
     "calls callback with return result on exit", 
     function(t) { 
         genny.run(function* (resume) {
+            yield setImmediate(resume());
             return 1;
         }, function(err, res) {
             t.equals(res, 1, "result present");
@@ -86,6 +90,7 @@ t.test(
             var x = yield normal(resume());
             return x == "OK";
         }, function(err, res) {
+            console.log(err, res);
             t.ok(res, "result is true");
             t.end();
         });
@@ -95,7 +100,7 @@ t.test(
 
 t.test(
     "handles functions that immediately call the callback in the same tick",
-    genny.fn(function* (resume, t) { 
+    genny.fn(function* (t, resume) { 
         var arr = [];
         for (var k = 0; k < 10; ++k)
             arr.push(yield nowait(k, resume()));
@@ -105,7 +110,7 @@ t.test(
 
 t.test(
     "handles evil functions that run callbacks multiple times",
-    genny.fn(function* (resume, t) {
+    genny.fn(function* (t, resume) {
         try {
             yield evil(resume());
             var res = yield normal(resume());
@@ -117,7 +122,7 @@ t.test(
 
 t.test(
     "has a complete error stack",
-    genny.fn(function* completeStackTrace(resume, t) {
+    genny.fn(function* completeStackTrace(t, resume) {
         try {
             yield errors(resume());
         } catch (e) {
@@ -130,7 +135,7 @@ t.test(
 
 t.test(
     "has a complete error stack even when invoking generators",
-    genny.fn(function* completeStackTrace2(resume, t) {
+    genny.fn(function* completeStackTrace2(t, resume) {
 
         function* innerGenerator1(resume) {
             yield errors(resume());
@@ -141,6 +146,7 @@ t.test(
         function* innerGenerator3(resume) {
             yield* innerGenerator2(resume.gen());
         }
+
         try {
             yield* innerGenerator3(resume.gen());
         } catch (e) {
@@ -156,7 +162,7 @@ t.test(
 
 t.test(
     "resume.nothrow yields arrays",
-    genny.fn(function* (resume, t) {
+    genny.fn(function* (t, resume) {
         var res = yield multiresult(resume.nothrow());
             t.equals(res[0], null, 'first argument is error');
             t.equals(res[2], 'r2', 'third argument is r2');
@@ -169,7 +175,7 @@ t.test(
 t.test(
     "listener doesn't send results to callback",
     function(t) {
-        genny.listener(function* (resume, callback) {
+        genny.listener(function* (callback, resume) {
             setTimeout(callback, 1);
             return "resultFromGenerator"; 
         })(function(err, res) {
@@ -181,7 +187,7 @@ t.test(
 t.test(
     "listener doesn't send errors to callback",
     function(t) {
-        genny.listener(function* (resume, callback) {
+        genny.listener(function* (callback, resume) {
             setTimeout(callback, 1);
             throw new Error("ErrorFromGenerator");
         })(function(err) {
@@ -195,7 +201,7 @@ t.test(
 t.test(
     "middleware doesn't send results to callback",
     function(t) {
-        genny.middleware(function* (resume, req, res, next) {
+        genny.middleware(function* (req, res, next) {
             return true;
         })(t, t, function(err, res) {
             t.equals(res, undefined, 'listener has no result in callback');
@@ -206,7 +212,7 @@ t.test(
 t.test(
     "middleware does send errors to callback",
     function(t) {
-        genny.middleware(function* (resume, req, res, next) {
+        genny.middleware(function* (req, res, next) {
             throw new Error("Oops");
         })(t, t, function(err) {
             t.ok(err, 'middleware has error in callback');
