@@ -1,8 +1,18 @@
 # genny
 
-A tiny ES6 (harmony) library for node 0.11.2 and up that helps you use 
-generators with node style callbacks, similar to 
+An ES6 (harmony) library for node 0.11.2 and up that helps you use generators 
+with node style callbacks, similar to 
 [suspend](https://github.com/jmar777/suspend)
+
+Benefits:
+
+- No need to wrap anything or use fn.bind. Works with regular callback-taking 
+  node functions.
+- Complete error stack traces
+
+Drawbacks:
+
+- Doesn't work with promises (yet)
 
 # usage examples
 
