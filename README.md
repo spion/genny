@@ -17,10 +17,31 @@ genny.run(function* (resume) {
 });
 ```
 
-Genny passes a function that can make resume functions to your generator. Its 
-always the last argument.
+Genny automatically passes `resume` as the last argument to your generator.
+Its a constructor that can make resume callbacks. 
 
-Handle errors with `try`/`catch`, or as return results via
+The generator pauses when it encounters a yield, then resumes when the created
+resume callback is called by the async operation. If the callback was called 
+with a value:
+
+```js
+fn(null, value)
+```
+
+then the yield expression will return that value. 
+
+Example:
+
+```js
+genny.run(function* (resume) {
+    var data = yield fs.readFile("test.js", resume());
+    console.log(data.toString())
+});  
+```
+
+## errors
+
+You can handle errors with `try`/`catch`, or as return results via
 `resume.nothrow`
 
 ```js
@@ -40,8 +61,7 @@ genny.run(function* (resume) {
 });
 ```
 
-Want to catch all uncaught exceptions? You can pass a callback argument to
-`genny.run`:
+Alternatively, you can pass a callback argument to `genny.run`:
 
 ```js
 genny.run(function* (resume) {
@@ -208,7 +228,7 @@ of approximately 40%.
 In the future, the overhead will probably be eliminated in node but not in 
 browsers.
 
-# more
+# more info
 
 Look in `test/index.js` for more examples and tests.
 
