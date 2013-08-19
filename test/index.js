@@ -1,7 +1,7 @@
 /*jshint esnext: true */
 
 var t = require('tap');
-
+var Q = require('q');
 
 var genny = require('../');
 
@@ -231,5 +231,50 @@ t.test(
         })
     });
 
+/****************************************************
+ * Promises
+ ****************************************************/
 
+var promiseTest = function promiseTest(err) {
+    var d = Q.defer();
+    setTimeout(function() { 
+        if (!err) d.resolve('as-promised');
+        else d.reject(new Error("Fail"));
+    }, 1);
+    return d.promise;
+};
 
+t.test(
+    "accepts promises",
+    genny.fn(function* (t, resume) {
+        var res = yield promiseTest();
+        t.equals(res, 'as-promised', 'promise was handled');
+        try {
+            var err = yield promiseTest(true);
+        } catch (e) {
+            t.ok(e, 'Had error');
+            t.end();
+        }
+    }));
+
+t.test(
+    "accepts thunks",
+    genny.fn(function* (t) {
+        var res = yield normal;
+        t.equals(res, 'OK', 'thunk was handled');
+        try {
+            var err = yield errors;
+        } catch (e) {
+            t.ok(e, 'Had error');
+            t.end();
+        }
+    }));
+
+t.test(
+    "accepts arrays",
+    genny.fn(function* (t) {
+        var multi = yield [normal, promiseTest()];
+        t.equals(multi[0], 'OK');
+        t.equals(multi[1], 'as-promised');
+        t.end();
+    }));

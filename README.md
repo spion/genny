@@ -9,10 +9,8 @@ Benefits:
 - No need to wrap anything or use fn.bind. Works with regular callback-taking 
   node functions.
 - Complete error stack traces
+- Compatible: also works with promises, thunks and arrays of promises/thunks.
 
-Drawbacks:
-
-- Doesn't work with promises (yet)
 
 # usage examples
 

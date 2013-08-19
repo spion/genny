@@ -50,22 +50,70 @@ function genny(gen) {
 
 
         function processPending() {
-            //console.log("Process pending");
             var item, result;
-            //console.log(queue);
             while (queue.check()) {
-                //console.log("Next item: ", item);
                 var val = queue.next.value;
                 if (hasSend && item.value !== undefined) 
                     result = iterator.send(val);
                 else 
                     result = iterator.next(val);
 
-                queue.advance();
-                //console.log("Generator yielded!");
+                queue.advance();                
                 if (result.done && lastfn)
                     lastfn(null, result.value);
+                else if (result.value && result.value != resume) 
+                    // handle promises
+                    if (result.value.then instanceof Function) 
+                        handlePromise(result.value);
+                    // handle thunks
+                    else if (result.value instanceof Function)
+                        result.value(resume());
+                    else if (result.value instanceof Array)
+                        handleParallel(result.value);
+
             }
+        }
+
+        function handleParallel(array) {
+            var pending = array.length,
+                results = new Array(pending);
+
+            var resumer = resume();
+
+            var errored = false;
+            function handler(k) {
+                var called = false;
+                return function(err, res) {
+                    if (errored) return;
+                    if (called) {
+                        errored = true;
+                        return resumer(new Error("thunk already called"));
+                    }
+                    if (err) {
+                        errored = true;
+                        return resumer(err);
+                    }
+                    called = true;
+                    results[k] = res;
+                    if (!--pending)
+                        resumer(null, results);
+                }
+            }
+            array.forEach(function(item, k) {
+                if (item.then instanceof Function) 
+                    handlePromise(item, handler(k));
+                else if (item instanceof Function)
+                    item(handler(k));
+            });
+        }
+
+        function handlePromise(promise, handler) {
+            var handler = handler || resume();
+            promise.then(function promiseSuccess(result) {
+                handler(null, result)
+            }, function promiseError(err) {
+                handler(err);
+            }); 
         }
 
         function throwAt(iterator, err) {
@@ -132,10 +180,11 @@ function genny(gen) {
             };
             return resume;
         }
+        var resume = makeResume();
         if (lastfn) 
-            args[args.length - 1] = makeResume();
+            args[args.length - 1] = resume;
         else
-            args.push(makeResume());
+            args.push(resume);
         iterator = gen.apply(this, args);
 
         // first item sent to generator is undefined
