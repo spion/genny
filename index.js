@@ -232,5 +232,8 @@ exports.middleware = function(gen) {
 }
 
 exports.run = function(gen, cb) {
-    exports.fn(gen)(cb);
+    if(co)
+        exports.fn(gen)(cb);
+    else
+        exports.fn(gen)();
 }
