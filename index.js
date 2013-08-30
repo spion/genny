@@ -232,7 +232,7 @@ exports.middleware = function(gen) {
 }
 
 exports.run = function(gen, cb) {
-    if(co)
+    if(cb)
         exports.fn(gen)(cb);
     else
         exports.fn(gen)();
