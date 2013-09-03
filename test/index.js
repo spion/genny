@@ -172,6 +172,35 @@ t.test(
     }));
 
 t.test(
+    "has a complete error stack for thrown exceptions",
+    genny.fn(function* completeStackTrace2(t, resume) {
+
+        function* innerGenerator1(resume) {
+            throw new Error("Whoopsy");
+        }
+        function* innerGenerator2(resume) {
+            yield* innerGenerator1(resume.gen());
+        } 
+        function* innerGenerator3(resume) {
+            yield* innerGenerator2(resume.gen());
+        }
+
+        try {
+            yield* innerGenerator3(resume.gen());
+        } catch (e) {
+            //console.log(e.stack);
+            t.ok(~e.stack.indexOf('innerGenerator1'), 
+                 "stack contains inner generator 1");
+            t.ok(~e.stack.indexOf('innerGenerator3'), 
+                 "stack contains inner generator 3");
+ 
+            t.end();
+        }
+    }));
+
+
+
+t.test(
     "resume.nothrow yields arrays",
     genny.fn(function* (t, resume) {
         var res = yield multiresult(resume.nothrow());
