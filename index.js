@@ -119,9 +119,9 @@ function genny(gen) {
         function throwAt(iterator, err) {
             try {
                 iterator.throw(err);
-            } catch(e) {
-                if (lastfn) return lastfn(err); 
-                else throw err; 
+            } catch (e) {
+                if (lastfn) return lastfn(e); 
+                else throw e; 
             }
         }
 
