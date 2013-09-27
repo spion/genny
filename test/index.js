@@ -172,6 +172,36 @@ t.test(
     }));
 
 t.test(
+    "has a complete error when invoking generators w/o yield*",
+    genny.fn(function* completeStackTraceUnstarred(t, resume) {
+
+        function* innerGenerator1(resume) {
+            yield errors(resume());
+        }
+        function* innerGenerator2(resume) {
+            yield genny.fn(innerGenerator1)(resume());
+        } 
+        function* innerGenerator3(resume) {
+            yield genny.fn(innerGenerator2)(resume());
+        }
+
+        try {
+            yield genny.fn(innerGenerator3)(resume());
+        } catch (e) {
+            //console.log(e.stack);
+            t.ok(~e.stack.indexOf('innerGenerator1'), 
+                 "stack contains inner generator 1");
+            t.ok(~e.stack.indexOf('innerGenerator3'), 
+                 "stack contains inner generator 3");
+ 
+            t.end();
+        }
+    }));
+
+
+
+
+t.test(
     "has a complete error stack for thrown exceptions",
     genny.fn(function* completeStackTrace2(t, resume) {
 
@@ -261,7 +291,7 @@ t.test(
     });
 
 /****************************************************
- * Promises
+ * Promises and thunks
  ****************************************************/
 
 var promiseTest = function promiseTest(err) {
