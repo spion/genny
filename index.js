@@ -1,3 +1,4 @@
+/* jshint esnext:true */
 
 var slice = [].slice;
 
@@ -34,6 +35,27 @@ function makeStackExtender(previous, noheader) {
        return err;
     }
 }
+function tryProcessPending(processPending, queue, lastfn) {
+    try {
+        processPending();
+    } catch (e) {
+        if (/generator/i.test(e.message)) return;
+        queue.empty();
+        if (lastfn) return lastfn(e);
+        else throw e;
+    }
+}
+function throwAt(iterator, err, callback) {
+    try {
+        iterator.throw(err);
+    } catch (e) {
+        if (callback) return callback(e); 
+        else throw e; 
+    }
+}
+
+
+
 
 function genny(gen) {
     return function start() {
@@ -116,15 +138,6 @@ function genny(gen) {
             }); 
         }
 
-        function throwAt(iterator, err) {
-            try {
-                iterator.throw(err);
-            } catch (e) {
-                if (lastfn) return lastfn(e); 
-                else throw e; 
-            }
-        }
-
         function identity(err) { return err; }
  
         function createResumer(opt) {
@@ -141,27 +154,16 @@ function genny(gen) {
 
                 if (item.complete) 
                     return throwAt(iterator, extendedStack(
-                        new Error("callback already called")));
+                        new Error("callback already called")), lastfn);
 
                 item.complete = true;
                 if (err && opt.throwing) {
                     queue.empty();
-                    return throwAt(iterator, extendedStack(err));
+                    return throwAt(iterator, extendedStack(err), lastfn);
                 }
 
                 item.value = opt.throwing ? res : slice.call(arguments);
-
-                try {
-                    processPending();
-                } catch (e) { 
-
-                    if (/generator/i.test(e.message)) return;
-
-                    queue.empty();
-                    if (lastfn) return lastfn(e);
-                    else throw e; 
-                }
-
+                tryProcessPending(processPending, queue, lastfn);
             }
         }
 
@@ -191,15 +193,8 @@ function genny(gen) {
         var item = new WorkItem()
         item.complete = true;
         queue.add(item); 
-
-        try {
-            processPending();
-        } catch (e) {
-            queue.empty();
-            if (lastfn) return lastfn(e);
-            else throw e;
-        }
-        
+        tryProcessPending(processPending, queue, lastfn);
+       
     }
 }
 
