@@ -18,14 +18,9 @@ function stackFilter(stack) {
 }
 
 function makeStackExtender(previous, noheader) {
-    var asyncStack;
-    try {
-        throw new Error();
-    } catch (e) {
-        asyncStack =
-            e.stack.substring(e.stack.indexOf("\n") + 1);
-    } 
+    var e = new Error();
     return function(err) {
+        var asyncStack = e.stack.substring(e.stack.indexOf("\n") + 1);
         if (err.stack) {
             if (!noheader) err.stack += '\nFrom generator:'
             err.stack += '\n' + stackFilter(asyncStack);
@@ -35,6 +30,8 @@ function makeStackExtender(previous, noheader) {
        return err;
     }
 }
+
+
 function tryProcessPending(processPending, queue, lastfn) {
     try {
         processPending();
@@ -153,8 +150,9 @@ function genny(gen) {
             return function resume(err, res) {
 
                 if (item.complete) 
-                    return throwAt(iterator, extendedStack(
-                        new Error("callback already called")), lastfn);
+                    return throwAt(iterator, 
+                        extendedStack(new Error("callback already called")), 
+                        lastfn);
 
                 item.complete = true;
                 if (err && opt.throwing) {
@@ -164,6 +162,7 @@ function genny(gen) {
 
                 item.value = opt.throwing ? res : slice.call(arguments);
                 tryProcessPending(processPending, queue, lastfn);
+                //extendedStack = null;
             }
         }
 
