@@ -2,9 +2,6 @@
 
 var slice = [].slice;
 
-var hasSend = !!(function* () { yield 1; })().send;
-
-
 var wq = require('./lib/work-queue'),
     WorkQueue = wq.WorkQueue,
     WorkItem = wq.WorkItem;
@@ -72,10 +69,7 @@ function genny(gen) {
             var item, result;
             while (queue.check()) {
                 var val = queue.next.value;
-                if (hasSend && item.value !== undefined) 
-                    result = iterator.send(val);
-                else 
-                    result = iterator.next(val);
+                result = iterator.next(val);
 
                 queue.advance();                
                 if (result.done && lastfn)
