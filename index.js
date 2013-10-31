@@ -2,9 +2,7 @@
 
 var slice = [].slice;
 
-var wq = require('./lib/work-queue'),
-    WorkQueue = wq.WorkQueue,
-    WorkItem = wq.WorkItem;
+var WorkQueue = require('./lib/work-queue');
 
 function stackFilter(stack) {
     return stack.split('\n').slice(1,4).filter(function(l) {
@@ -72,7 +70,7 @@ function genny(gen) {
                 var val = queue.next.value;
                 result = iterator.next(val);
 
-                queue.advance();                
+                item = queue.advance();
                 if (result.done && lastfn)
                     lastfn(null, result.value);
                 else if (result.value && result.value != resume) 
@@ -139,8 +137,7 @@ function genny(gen) {
             else 
                 extendedStack = identity;
 
-            var item = new WorkItem();
-            queue.add(item);
+            var item = queue.add(undefined);
 
             return function resume(err, res) {
 
@@ -184,11 +181,8 @@ function genny(gen) {
         iterator = gen.apply(this, args);
 
         // first item sent to generator is undefined
-        var item = new WorkItem()
-        item.complete = true;
-        queue.add(item); 
+        queue.add(undefined).complete = true;
         tryProcessPending(processPending, queue, lastfn);
-       
     }
 }
 

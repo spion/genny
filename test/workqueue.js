@@ -1,17 +1,14 @@
 var t = require('tap');
 
-var wq = require('../lib/work-queue'),
-    WorkQueue = wq.WorkQueue,
-    WorkItem = wq.WorkItem;
-
+var WorkQueue = require('../lib/work-queue');
 
 t.test('work queue', function (t) {
-    var q = new WorkQueue(), a = new WorkItem('a');
+    var q = new WorkQueue();
 
     t.equals(q.next, q);
     t.equals(q.prev, q);
 
-    q.add(a);
+    var a = q.add('a');
     t.equals(q.advance(), undefined);
 
     t.equals(q.next, a);
@@ -27,18 +24,18 @@ t.test('work queue', function (t) {
 })
 
 t.test('work queuing', function (t) {
-    var q = new WorkQueue(), a = new WorkItem('a'), b = new WorkItem('b'), c = new WorkItem('c'), d = new WorkItem('d');
+    var q = new WorkQueue();
 
     t.equals(q.advance(), undefined);
 
-    q.add(a);
-    t.equals(q.next.value, 'a');
+    var a = q.add('a');
+    t.equals(a.value, 'a');
     t.equals(q.advance(), undefined);
 
-    q.add(b);
+    var b = q.add('b');
     t.equals(q.advance(), undefined);
 
-    q.add(c);
+    var c = q.add('c');
     t.equals(q.advance(), undefined);
 
     b.complete = true;
@@ -53,7 +50,7 @@ t.test('work queuing', function (t) {
     t.equals(q.advance(), c);
     t.equals(q.advance(), undefined);
 
-    q.add(d);
+    var d = q.add('d');
     t.equals(q.advance(), undefined);
     d.complete = true;
     t.equals(q.advance(), d);
