@@ -31,7 +31,6 @@ function tryProcessPending(processPending, queue, lastfn) {
     try {
         processPending();
     } catch (e) {
-        if (/generator/i.test(e.message)) return;
         queue.empty();
         if (lastfn) return lastfn(e);
         else throw e;
