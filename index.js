@@ -144,11 +144,13 @@ function genny(gen) {
             var item = queue.add(undefined);
 
             return function resume(err, res) {
-                if (item.complete)
+                if (item.complete === true)
                     return throwAt(iterator,
                                    extendedStack(new Error("callback already called")),
                                    queue, lastfn);
 
+                if (item.complete == null) // item was emptied when throwing, so we can ignore it
+                    return;
 
                 if (err && opt.throwing)
                     return throwAt(iterator, extendedStack(err), queue, lastfn);
