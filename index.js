@@ -63,14 +63,15 @@ function genny(gen) {
         var iterator;
         var queue = new WorkQueue();
 
-
+        var processing = false;
         function processPending() {
             var item, result;
-            while (queue.check()) {
-                var val = queue.next.value;
-                result = iterator.next(val);
-
-                item = queue.remove();
+            if (processing) // protects iterator.next() from a subsequent resume()() also trying to run iterator.next() before this one has returned (i.e reached a yield/return)
+                return;
+            processing = true;
+            try {
+              while (item = queue.remove()) {
+                result = iterator.next(item.value);
                 if (result.done && lastfn)
                     lastfn(null, result.value);
                 else if (result.value && result.value != resume) 
@@ -82,7 +83,9 @@ function genny(gen) {
                         result.value(resume());
                     else if (result.value instanceof Array)
                         handleParallel(result.value);
-
+              }
+            } finally {
+              processing = false;
             }
         }
 
