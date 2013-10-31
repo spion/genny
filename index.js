@@ -38,7 +38,8 @@ function tryProcessPending(processPending, queue, lastfn) {
     }
 }
 
-function throwAt(iterator, err, lastfn) {
+function throwAt(iterator, err, queue, lastfn) {
+    queue.empty();
     try {
         iterator.throw(err);
     } catch (e) {
@@ -143,18 +144,15 @@ function genny(gen) {
             var item = queue.add(undefined);
 
             return function resume(err, res) {
+                if (item.complete)
+                    return throwAt(iterator,
+                                   extendedStack(new Error("callback already called")),
+                                   queue, lastfn);
 
-                if (item.complete) 
-                    return throwAt(iterator, 
-                        extendedStack(new Error("callback already called")), 
-                        lastfn);
 
                 item.complete = true;
-                if (err && opt.throwing) {
-                    queue.empty();
-                    return throwAt(iterator, extendedStack(err), lastfn);
-                }
-
+                if (err && opt.throwing)
+                    return throwAt(iterator, extendedStack(err), queue, lastfn);
                 item.value = opt.throwing ? res : slice.call(arguments);
                 tryProcessPending(processPending, queue, lastfn);
                 //extendedStack = null;
