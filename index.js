@@ -27,19 +27,6 @@ function makeStackExtender(previous, noheader) {
 }
 
 
-function throwAt(iterator, err, queue, lastfn) {
-    queue.empty();
-    try {
-        iterator.throw(err);
-    } catch (e) {
-        if (lastfn) return lastfn(e);
-        else throw e;
-    }
-}
-
-
-
-
 function genny(gen) {
     return function start() {
         var args = slice.call(arguments), lastfn;
@@ -137,16 +124,24 @@ function genny(gen) {
             var item = queue.add(undefined);
 
             return function resume(err, res) {
-                if (item.complete === true)
-                    return throwAt(iterator,
-                                   extendedStack(new Error("callback already called")),
-                                   queue, lastfn);
+                var e;
 
-                if (item.complete == null) // item was emptied when throwing, so we can ignore it
+                if (item.complete === null) // item was emptied when throwing, so we can ignore it
                     return;
 
+                if (item.complete === true)
+                    e = new Error("callback already called");
+
                 if (err && opt.throwing)
-                    return throwAt(iterator, extendedStack(err), queue, lastfn);
+                    e = extendedStack(err);
+
+                if (e) try {
+                    queue.empty();                // these will never be useful again as we are about to pop the callstack
+                    iterator.throw(e);            // throw back to the yield in case they catch it
+                } catch(e) {                      // but if they didn't catch it,
+                    if (lastfn) return lastfn(e); // pass it on to our caller's callback (who might continue re.throw() it again)
+                    else throw e;                 // otherwise throw up our hands and give a usually useless short backtrace
+                }
 
                 item.complete = true;
                 item.value = opt.throwing ? res : slice.call(arguments);
