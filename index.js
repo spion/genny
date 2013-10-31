@@ -39,12 +39,13 @@ function tryProcessPending(processPending, queue, lastfn) {
         else throw e;
     }
 }
-function throwAt(iterator, err, callback) {
+
+function throwAt(iterator, err, lastfn) {
     try {
         iterator.throw(err);
     } catch (e) {
-        if (callback) return callback(e); 
-        else throw e; 
+        if (lastfn) return lastfn(e);
+        else throw e;
     }
 }
 
