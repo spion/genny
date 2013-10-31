@@ -27,16 +27,6 @@ function makeStackExtender(previous, noheader) {
 }
 
 
-function tryProcessPending(processPending, queue, lastfn) {
-    try {
-        processPending();
-    } catch (e) {
-        queue.empty();
-        if (lastfn) return lastfn(e);
-        else throw e;
-    }
-}
-
 function throwAt(iterator, err, queue, lastfn) {
     queue.empty();
     try {
@@ -84,6 +74,10 @@ function genny(gen) {
                     else if (result.value instanceof Array)
                         handleParallel(result.value);
               }
+            } catch (e) {
+              queue.empty();
+              if (lastfn) return lastfn(e);
+              else throw e;
             } finally {
               processing = false;
             }
@@ -156,7 +150,7 @@ function genny(gen) {
 
                 item.complete = true;
                 item.value = opt.throwing ? res : slice.call(arguments);
-                tryProcessPending(processPending, queue, lastfn);
+                processPending();
                 //extendedStack = null;
             }
         }
@@ -185,7 +179,7 @@ function genny(gen) {
 
         // first item sent to generator is undefined
         queue.add(undefined).complete = true;
-        tryProcessPending(processPending, queue, lastfn);
+        processPending();
     }
 }
 
