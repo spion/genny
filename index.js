@@ -150,9 +150,10 @@ function genny(gen) {
                                    queue, lastfn);
 
 
-                item.complete = true;
                 if (err && opt.throwing)
                     return throwAt(iterator, extendedStack(err), queue, lastfn);
+
+                item.complete = true;
                 item.value = opt.throwing ? res : slice.call(arguments);
                 tryProcessPending(processPending, queue, lastfn);
                 //extendedStack = null;
