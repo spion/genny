@@ -70,7 +70,7 @@ function genny(gen) {
                 var val = queue.next.value;
                 result = iterator.next(val);
 
-                item = queue.advance();
+                item = queue.remove();
                 if (result.done && lastfn)
                     lastfn(null, result.value);
                 else if (result.value && result.value != resume) 
