@@ -172,9 +172,8 @@ function genny(gen) {
             args.push(resume);
         iterator = gen.apply(this, args);
 
-        // first item sent to generator is undefined
-        queue.add(undefined).complete = true;
-        processPending();
+        // send something undefined to start the generator
+        createResumer({throwing: false, previous: undefined})(null, undefined);
     }
 }
 
