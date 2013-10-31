@@ -40,36 +40,6 @@ function genny(gen) {
         var iterator;
         var queue = new WorkQueue();
 
-        var processing = false;
-        function processPending() {
-            var item, result;
-            if (processing) // protects iterator.next() from a subsequent resume()() also trying to run iterator.next() before this one has returned (i.e reached a yield/return)
-                return;
-            processing = true;
-            try {
-              while (item = queue.remove()) {
-                result = iterator.next(item.value);
-                if (result.done && lastfn)
-                    lastfn(null, result.value);
-                else if (result.value && result.value != resume) 
-                    // handle promises
-                    if (result.value.then instanceof Function) 
-                        handlePromise(result.value);
-                    // handle thunks
-                    else if (result.value instanceof Function)
-                        result.value(resume());
-                    else if (result.value instanceof Array)
-                        handleParallel(result.value);
-              }
-            } catch (e) {
-              queue.empty();
-              if (lastfn) return lastfn(e);
-              else throw e;
-            } finally {
-              processing = false;
-            }
-        }
-
         function handleParallel(array) {
             var pending = array.length,
                 results = new Array(pending);
@@ -113,7 +83,9 @@ function genny(gen) {
         }
 
         function identity(err) { return err; }
- 
+
+        var processing = false;
+
         function createResumer(opt) {
             var extendedStack;
             if (exports.longStackSupport) 
@@ -123,7 +95,7 @@ function genny(gen) {
 
             var item = queue.add(undefined);
 
-            return function resume(err, res) {
+            return function _resume(err, res) {
                 var e;
 
                 if (item.complete === null) // item was emptied when throwing, so we can ignore it
@@ -145,7 +117,33 @@ function genny(gen) {
 
                 item.complete = true;
                 item.value = opt.throwing ? res : slice.call(arguments);
-                processPending();
+
+                if (processing) // protects iterator.next() from a subsequent resume()() also trying to run iterator.next() before this one has returned (i.e reached a yield/return)
+                    return;
+                processing = true;
+                try {
+                    var qitem;
+                    while (qitem = queue.remove()) {
+                        var result = iterator.next(qitem.value);
+                        if (result.done && lastfn)
+                            lastfn(null, result.value);
+                        else if (result.value && result.value != resume)
+                            // handle promises
+                            if (result.value.then instanceof Function)
+                                handlePromise(result.value);
+                            // handle thunks
+                            else if (result.value instanceof Function)
+                                result.value(resume());
+                            else if (result.value instanceof Array)
+                            handleParallel(result.value);
+                    }
+                } catch (e) {
+                    queue.empty();
+                    if (lastfn) return lastfn(e);
+                    else throw e;
+                } finally {
+                    processing = false;
+                }
                 //extendedStack = null;
             }
         }
