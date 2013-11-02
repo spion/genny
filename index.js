@@ -87,11 +87,7 @@ function genny(gen) {
         var processing = false;
 
         function createResumer(opt) {
-            var extendedStack;
-            if (exports.longStackSupport) 
-                extendedStack = makeStackExtender(opt.previous);
-            else 
-                extendedStack = identity;
+            var extendedStack = exports.longStackSupport ? makeStackExtender(opt.previous) : identity;
 
             var item = queue.add(undefined);
 
