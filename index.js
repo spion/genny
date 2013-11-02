@@ -92,16 +92,14 @@ function genny(gen) {
             var item = queue.add(undefined);
 
             return function _resume(err, res) {
-                var e;
-
                 if (item.complete === null) // item was emptied when throwing, so we can ignore it
                     return;
 
                 if (item.complete === true)
-                    e = new Error("callback already called");
+                    var e = new Error("callback already called");
 
                 if (err && opt.throwing)
-                    e = extendedStack(err);
+                    var e = extendedStack(err);
 
                 if (e) try {
                     queue.empty();                // these will never be useful again as we are about to pop the callstack
