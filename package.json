@@ -14,9 +14,9 @@
     "url": "git://github.com/spion/genny.git"
   },
   "keywords": [
+    "async",
     "generator",
     "callback",
-    "hell",
     "yield",
     "resume",
     "suspend"
