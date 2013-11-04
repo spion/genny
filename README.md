@@ -141,8 +141,8 @@ generator, it is passed as the result argument to the callback.
 
 ## multi-argument callbacks, calling generators
 
-If an async functions calls the callback with more than 2 arguments, an
-array will be returned from the yield:
+If the async function calls the callback with more than 2 arguments, an
+array will be returned from the yield expression:
 
 ```js
 function returnsmore(callback) {
@@ -187,7 +187,7 @@ app.get('/test', genny.middleware(function* (req, res, resume) {
     if (yield isAuth(req, resume.t)) 
         return true; // will call next() 
     else
-        throw new CodedError(401, "Unauthorized"); // will call next(err)
+        throw new HttpError(401, "Unauthorized"); // will call next(err)
 
     // or use return; and next() will not be called.
 });
