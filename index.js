@@ -93,16 +93,15 @@ function genny(gen) {
 
             return function _resume(err, res) {
                 if (item.complete === null) return; // item was emptied when throwing, so we can ignore it
-                if (item.complete === true) throw extendedStack(new Error("callback already called"));
+                if (item.complete !== undefined) throw extendedStack(new Error("callback already called"));
 
-                item.complete = true;
-                item.value = slice.call(arguments)
+                item.complete = slice.call(arguments);
 
                 if (generating === false) try { // avoid running the generator when inside of it, the while loop will process item it once we unwind
                     generating = true;
                     var qitem;
                     while (qitem = queue.remove()) {
-                        var result, args = qitem.value;
+                        var result, args = qitem.complete;
                         if (opt.throwing) {
                             if (args[0]) result = iterator.throw(extendedStack(args[0]));
                             else         result = iterator.next(args[1])

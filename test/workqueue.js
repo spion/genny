@@ -8,13 +8,14 @@ t.test('work queue', function (t) {
     t.equals(q.next, q);
     t.equals(q.prev, q);
 
-    var a = q.add('a');
+    var a = q.add(undefined);
     t.equals(q.remove(), undefined);
 
     t.equals(q.next, a);
     t.equals(q.prev, a);
 
-    q.next.complete = true;
+    a.complete = 'a';
+
     t.equals(q.remove(), a);
     t.equals(q.remove(), undefined);
 
@@ -28,33 +29,35 @@ t.test('work queuing', function (t) {
 
     t.equals(q.remove(), undefined);
 
-    var a = q.add('a');
-    t.equals(a.value, 'a');
+    var a = q.add(undefined);
     t.equals(q.remove(), undefined);
 
-    var b = q.add('b');
+    var b = q.add(undefined);
     t.equals(q.remove(), undefined);
 
-    var c = q.add('c');
+    var c = q.add(undefined);
     t.equals(q.remove(), undefined);
 
-    b.complete = true;
+    b.complete = 'b';
     t.equals(q.remove(), undefined);
 
-    a.complete = true;
+    a.complete = 'a';
     t.equals(q.remove(), a);
     t.equals(q.remove(), b);
     t.equals(q.remove(), undefined);
 
-    c.complete = true;
+    c.complete = 'c';
     t.equals(q.remove(), c);
     t.equals(q.remove(), undefined);
 
-    var d = q.add('d');
+    var d = q.add();
     t.equals(q.remove(), undefined);
-    d.complete = true;
+    d.complete = 'd';
     t.equals(q.remove(), d);
     t.equals(q.remove(), undefined);
+
+    var e = q.add('e');
+    t.equals(q.remove(), e);
 
     t.end();
 })
