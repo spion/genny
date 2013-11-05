@@ -20,7 +20,7 @@ function makeStackExtender(previous, noheader) {
             if (!noheader) err.stack += '\nFrom generator:'
             err.stack += '\n' + stackFilter(asyncStack);
         }
-        if (previous) 
+        if (previous)
             err = previous(err);
        return err;
     }
@@ -36,7 +36,7 @@ function genny(gen) {
 
         if (!(lastfn instanceof Function))
             lastfn = null;
-        
+
         var iterator;
         var queue = new WorkQueue();
 
@@ -66,7 +66,7 @@ function genny(gen) {
                 }
             }
             array.forEach(function(item, k) {
-                if (item.then instanceof Function) 
+                if (item.then instanceof Function)
                     handlePromise(item, handler(k));
                 else if (item instanceof Function)
                     item(handler(k));
@@ -79,7 +79,7 @@ function genny(gen) {
                 handler(null, result)
             }, function promiseError(err) {
                 handler(err);
-            }); 
+            });
         }
 
         function identity(err) { return err; }
@@ -133,7 +133,7 @@ function genny(gen) {
         }
 
         function makeResume(previous) {
-            var resume = function() { 
+            var resume = function() {
                 return createResumer({throwing: true, previous: previous});
             }
             resume.nothrow = function() {
@@ -141,14 +141,14 @@ function genny(gen) {
             }
             resume.gen = function() {
                 var extendedStack;
-                if (exports.longStackSupport) 
+                if (exports.longStackSupport)
                     extendedStack = makeStackExtender(previous, true);
                 return makeResume(extendedStack);
             };
             return resume;
         }
         var resume = makeResume();
-        if (lastfn) 
+        if (lastfn)
             args[args.length - 1] = resume;
         else
             args.push(resume);
@@ -170,7 +170,7 @@ exports.listener = function(gen) {
     return function() {
         var args = [].slice.call(arguments);
         args.push(function ignoreListener(err, res) {});
-        fn.apply(this, args);        
+        fn.apply(this, args);
     }
 }
 
@@ -178,10 +178,10 @@ exports.middleware = function(gen) {
     var fn = genny(gen);
     return function(req, res, next) {
         fn(req, res, function(err, res) {
-            if (next) 
-                if (err) 
+            if (next)
+                if (err)
                     next(err);
-                else if (res === true) 
+                else if (res === true)
                     next();
         });
     }

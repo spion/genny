@@ -19,7 +19,7 @@ function nowait(k, cb) {
 
 function evil(cb) {
     setTimeout(function() {
-        cb(null, 'EVIL') 
+        cb(null, 'EVIL')
     }, 10);
     setImmediate(function() {
         cb(null, 'EVIL')
@@ -28,7 +28,7 @@ function evil(cb) {
 
 function normal(cb) {
     setTimeout(function() {
-        cb(null, "OK") 
+        cb(null, "OK")
     }, 30);
 }
 
@@ -51,27 +51,27 @@ var return5 = genny.fn(function* $return5(resume) {
 });
 
 t.test(
-    "simple test", 
+    "simple test",
     genny.fn(function* (t, resume) {
         yield setImmediate(resume());
         t.ok(true, 'resume success');
-        t.end();    
+        t.end();
     }));
 
 
 t.test(
-    "correct parallel order", 
+    "correct parallel order",
     genny.fn(function* (t, resume) {
         normal(resume());
         setImmediate(resume());
         var ok = yield resume, nothing = yield resume;
         t.equals(ok, 'OK')
         t.equals(nothing, undefined);
-        t.end();    
+        t.end();
     }));
 
 t.test(
-    "throws error", 
+    "throws error",
     genny.fn(function* (t, resume) {
         try {
             yield errors(resume());
@@ -82,8 +82,8 @@ t.test(
     }));
 
 t.test(
-    "calls callback if present instead of throwing + genny.run", 
-    function(t) { 
+    "calls callback if present instead of throwing + genny.run",
+    function(t) {
         genny.run(function* (resume) {
             yield errors(resume());
         }, function(err, res) {
@@ -93,8 +93,8 @@ t.test(
     });
 
 t.test(
-    "calls callback with return result on exit", 
-    function(t) { 
+    "calls callback with return result on exit",
+    function(t) {
         genny.run(function* (resume) {
             yield setImmediate(resume());
             return 1;
@@ -107,8 +107,8 @@ t.test(
 
 
 t.test(
-    "calls callback with return result on exit when return is after a yield", 
-    function(t) { 
+    "calls callback with return result on exit when return is after a yield",
+    function(t) {
         genny.run(function* (resume) {
             var x = yield normal(resume());
             return x == "OK";
@@ -122,7 +122,7 @@ t.test(
 
 t.test(
     "handles functions that immediately call the callback in the same tick",
-    genny.fn(function* (t, resume) { 
+    genny.fn(function* (t, resume) {
         var arr = [];
         for (var k = 0; k < 10; ++k)
             arr.push(yield nowait(k, resume()));
@@ -203,7 +203,7 @@ t.test(
         try {
             yield evil(resume());
             var res = yield normal(resume());
-        } catch (e) {            
+        } catch (e) {
             t.ok(e, "evil functions cause throw");
             t.end();
         }
@@ -215,7 +215,7 @@ t.test(
         try {
             yield errors(resume());
         } catch (e) {
-            t.ok(~e.stack.indexOf('completeStackTrace'), 
+            t.ok(~e.stack.indexOf('completeStackTrace'),
                  "error stack is complete");
             t.end();
         }
@@ -231,7 +231,7 @@ t.test(
         }
         function* innerGenerator2(resume) {
             yield* innerGenerator1(resume.gen());
-        } 
+        }
         function* innerGenerator3(resume) {
             yield* innerGenerator2(resume.gen());
         }
@@ -240,11 +240,10 @@ t.test(
             yield* innerGenerator3(resume.gen());
         } catch (e) {
             //console.log(e.stack);
-            t.ok(~e.stack.indexOf('innerGenerator1'), 
+            t.ok(~e.stack.indexOf('innerGenerator1'),
                  "stack contains inner generator 1");
-            t.ok(~e.stack.indexOf('innerGenerator3'), 
+            t.ok(~e.stack.indexOf('innerGenerator3'),
                  "stack contains inner generator 3");
- 
             t.end();
         }
     }));
@@ -258,7 +257,7 @@ t.test(
         }
         function* innerGenerator2(resume) {
             yield genny.fn(innerGenerator1)(resume());
-        } 
+        }
         function* innerGenerator3(resume) {
             yield genny.fn(innerGenerator2)(resume());
         }
@@ -267,11 +266,10 @@ t.test(
             yield genny.fn(innerGenerator3)(resume());
         } catch (e) {
             //console.log(e.stack);
-            t.ok(~e.stack.indexOf('innerGenerator1'), 
+            t.ok(~e.stack.indexOf('innerGenerator1'),
                  "stack contains inner generator 1");
-            t.ok(~e.stack.indexOf('innerGenerator3'), 
+            t.ok(~e.stack.indexOf('innerGenerator3'),
                  "stack contains inner generator 3");
- 
             t.end();
         }
     }));
@@ -288,7 +286,7 @@ t.test(
         }
         function* innerGenerator2(resume) {
             yield* innerGenerator1(resume.gen());
-        } 
+        }
         function* innerGenerator3(resume) {
             yield* innerGenerator2(resume.gen());
         }
@@ -297,11 +295,10 @@ t.test(
             yield* innerGenerator3(resume.gen());
         } catch (e) {
             //console.log(e.stack);
-            t.ok(~e.stack.indexOf('innerGenerator1'), 
+            t.ok(~e.stack.indexOf('innerGenerator1'),
                  "stack contains inner generator 1");
-            t.ok(~e.stack.indexOf('innerGenerator3'), 
+            t.ok(~e.stack.indexOf('innerGenerator3'),
                  "stack contains inner generator 3");
- 
             t.end();
         }
     }));
@@ -318,14 +315,12 @@ t.test(
         }));
 
 
-        
-        
 t.test(
     "listener doesn't send results to callback",
     function(t) {
         genny.listener(function* (callback, resume) {
             setTimeout(callback, 1);
-            return "resultFromGenerator"; 
+            return "resultFromGenerator";
         })(function(err, res) {
             t.equals(res, undefined, 'listener has no result in callback');
             t.end();
@@ -374,7 +369,7 @@ t.test(
 
 var promiseTest = function promiseTest(err) {
     var d = Q.defer();
-    setTimeout(function() { 
+    setTimeout(function() {
         if (!err) d.resolve('as-promised');
         else d.reject(new Error("Fail"));
     }, 1);
