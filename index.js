@@ -110,14 +110,12 @@ function genny(gen) {
                         if (result.done && lastfn)
                             lastfn(null, result.value);
                         else if (result.value && result.value != resume)
-                            // handle promises
                             if (result.value.then instanceof Function)
                                 handlePromise(result.value);
-                            // handle thunks
                             else if (result.value instanceof Function)
-                                result.value(resume());
+                                result.value(resume()); // handle thunks
                             else if (result.value instanceof Array)
-                            handleParallel(result.value);
+                                handleParallel(result.value);
                     }
                 } catch (e) {
                     queue.empty();
