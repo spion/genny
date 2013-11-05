@@ -92,25 +92,11 @@ function genny(gen) {
             var item = queue.add(undefined);
 
             return function _resume(err, res) {
-                if (item.complete === null) // item was emptied when throwing, so we can ignore it
-                    return;
-
-                if (item.complete === true)
-                    var e = new Error("callback already called");
-
-                if (err && opt.throwing)
-                    var e = extendedStack(err);
-
-                if (e) try {
-                    queue.empty();                // these will never be useful again as we are about to pop the callstack
-                    iterator.throw(e);            // throw back to the yield in case they catch it
-                } catch(e) {                      // but if they didn't catch it,
-                    if (lastfn) return lastfn(e); // pass it on to our caller's callback (who might continue re.throw() it again)
-                    else throw e;                 // otherwise throw up our hands and give a usually useless short backtrace
-                }
+                if (item.complete === null) return; // item was emptied when throwing, so we can ignore it
+                if (item.complete === true) throw extendedStack(new Error("callback already called"));
 
                 item.complete = true;
-                item.value = opt.throwing ? res : slice.call(arguments);
+                item.value = slice.call(arguments)
 
                 if (processing) // protects iterator.next() from a subsequent resume()() also trying to run iterator.next() before this one has returned (i.e reached a yield/return)
                     return;
@@ -118,7 +104,11 @@ function genny(gen) {
                 try {
                     var qitem;
                     while (qitem = queue.remove()) {
-                        var result = iterator.next(qitem.value);
+                        var result, args = qitem.value;
+                        if (opt.throwing) {
+                            if (args[0]) result = iterator.throw(extendedStack(args[0]));
+                            else         result = iterator.next(args[1])
+                        } else           result = iterator.next(args);
                         if (result.done && lastfn)
                             lastfn(null, result.value);
                         else if (result.value && result.value != resume)
@@ -165,7 +155,7 @@ function genny(gen) {
         iterator = gen.apply(this, args);
 
         // send something undefined to start the generator
-        createResumer({throwing: false, previous: undefined})(null, undefined);
+        createResumer({throwing: true, previous: undefined})(null, undefined);
     }
 }
 

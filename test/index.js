@@ -38,6 +38,17 @@ function multiresult(cb) {
     });
 }
 
+var throws = genny.fn(function* $throws(t, message, resume) {
+    if (t) {
+        var ok = yield normal(resume());
+        t.equals(ok, "OK", "yields before a throw");
+    }
+    throw message;
+});
+
+var return5 = genny.fn(function* $return5(resume) {
+    return 5;
+});
 
 t.test(
     "simple test", 
@@ -119,6 +130,73 @@ t.test(
         t.end();
     }));
 
+t.test(
+    "handles yields in/after a catch",
+    genny.fn(function* $test(t, resume) {
+        var types = [t, null];
+        for (var i=0; i<types.length; i++)
+            try {
+                yield throws(types[i], "threw", resume());
+            } catch (e) {
+                t.equals(e, "threw", "catches things thrown");
+                var res = yield return5(resume());
+                t.equals(res, 5, "handles yields after throws");
+            }
+        t.end();
+    }));
+
+t.test(
+    "handles yields in/after nested catches catch",
+    genny.fn(function* (t, resume) {
+        var types = [t, null];
+        for (var i=0; i<types.length; i++)
+            for (var j=0; j<types.length; j++)
+                try {
+                    yield throws(types[i], "threw", resume());
+                } catch (e) {
+                    t.equals(e, "threw", "catches things thrown");
+                    try {
+                        yield throws(types[j], "threw again", resume());
+                    } catch (e) {
+                        t.equals(e, "threw again", "catches things thrown again");
+                        var res = yield return5(resume());
+                        t.equals(res, 5, "handles yields after throws");
+                    }
+                }
+        t.end();
+    }));
+
+
+t.test(
+    "handles returns after a catch",
+    genny.fn(function* (t, resume) {
+        var done = genny.fn(function *(resume) {
+            try {
+                yield throws(t, "threw", resume());
+            } catch (e) {
+                t.equals(e, "threw", "catches things thrown");
+                return "done";
+            }
+        });
+        var z = yield done(resume());
+        t.equals(z, "done", "handles return immediately after a catch");
+        t.end();
+    }));
+
+t.test(
+    "functions not passed a callback can catch thrown errors",
+    genny.fn(function* (t, resume) {
+        genny.run(function* (resume) {
+            try {
+                yield throws(t, "threw", resume());
+            } catch (e) {
+                t.equals(e, "threw", "caught a thrown error");
+                t.end();
+            }
+        });
+    }));
+
+if (0) // can't legitimatly expect the thown error to be caught as the generator might be legitimately not running or even done by the time this gets thrown, so only a global catch will catch it.
 t.test(
     "handles evil functions that run callbacks multiple times",
     genny.fn(function* (t, resume) {
