@@ -95,7 +95,7 @@ function genny(gen) {
                 if (item.complete === null) return; // item was emptied when throwing, so we can ignore it
                 if (item.complete !== undefined) throw extendedStack(new Error("callback already called"));
 
-                item.complete = slice.call(arguments);
+                item.complete = arguments;
 
                 if (generating === false) try { // avoid running the generator when inside of it, the while loop will process item it once we unwind
                     generating = true;
