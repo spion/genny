@@ -84,7 +84,7 @@ function genny(gen) {
 
         function identity(err) { return err; }
 
-        var processing = false;
+        var generating = false;
 
         function createResumer(opt) {
             var extendedStack = exports.longStackSupport ? makeStackExtender(opt.previous) : identity;
@@ -98,10 +98,8 @@ function genny(gen) {
                 item.complete = true;
                 item.value = slice.call(arguments)
 
-                if (processing) // protects iterator.next() from a subsequent resume()() also trying to run iterator.next() before this one has returned (i.e reached a yield/return)
-                    return;
-                processing = true;
-                try {
+                if (generating === false) try { // avoid running the generator when inside of it, the while loop will process item it once we unwind
+                    generating = true;
                     var qitem;
                     while (qitem = queue.remove()) {
                         var result, args = qitem.value;
@@ -126,7 +124,7 @@ function genny(gen) {
                     if (lastfn) return lastfn(e);
                     else throw e;
                 } finally {
-                    processing = false;
+                    generating = false;
                 }
                 //extendedStack = null;
             }
