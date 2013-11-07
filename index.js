@@ -85,9 +85,8 @@ function genny(gen) {
         function identity(err) { return err; }
 
         var generating = false;
-
-        function createResumer(opt) {
-            var extendedStack = exports.longStackSupport ? makeStackExtender(opt.previous) : identity;
+        function createResumer(throwing, previous) {
+            var extendedStack = exports.longStackSupport ? makeStackExtender(previous) : identity;
 
             var item = queue.add(undefined);
 
@@ -102,7 +101,7 @@ function genny(gen) {
                     var qitem;
                     while (qitem = queue.remove()) {
                         var result, args = qitem.complete;
-                        if (opt.throwing) {
+                        if (throwing) {
                             if (args[0]) result = iterator.throw(extendedStack(args[0]));
                             else         result = iterator.next(args[1])
                         } else           result = iterator.next(args);
@@ -129,10 +128,10 @@ function genny(gen) {
 
         function makeResume(previous) {
             var resume = function() {
-                return createResumer({throwing: true, previous: previous});
+                return createResumer(true, previous);
             }
             resume.nothrow = function() {
-               return createResumer({throwing: false, previous: previous});
+               return createResumer(false, previous);
             }
             resume.gen = function() {
                 var extendedStack;
@@ -150,7 +149,7 @@ function genny(gen) {
         iterator = gen.apply(this, args);
 
         // send something undefined to start the generator
-        createResumer({throwing: true, previous: undefined})(null, undefined);
+        createResumer(true, null)(null, undefined);
     }
 }
 
