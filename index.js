@@ -2,8 +2,6 @@
 
 var slice = [].slice;
 
-var WorkQueue = require('./lib/work-queue');
-
 function stackFilter(stack) {
     return stack.split('\n').slice(1,4).filter(function(l) {
         return !~l.indexOf(__filename)
@@ -38,7 +36,6 @@ function genny(gen) {
             lastfn = null;
 
         var iterator;
-        var queue = new WorkQueue();
 
         function handleParallel(array) {
             var pending = array.length,
@@ -84,30 +81,27 @@ function genny(gen) {
 
         function identity(err) { return err; }
 
-        var generating = false;
+        var complete, generating = false;
         function createResumer(throwing, previous) {
             var extendedStack = exports.longStackSupport ? makeStackExtender(previous) : identity;
 
-            var item = queue.add(undefined);
-
             return function _resume(err, res) {
-                if (item.complete === null) return; // item was emptied when throwing, so we can ignore it
-                if (item.complete !== undefined) throw extendedStack(new Error("callback already called"));
+                if (complete === null) return; // item was emptied when throwing, so we can ignore it
+                if (complete !== undefined) throw extendedStack(new Error("callback already called"));
 
-                item.complete = arguments;
+                complete = arguments;
 
-                if (generating === false) try { // avoid running the generator when inside of it, the while loop will process item it once we unwind
+                if (generating === false) try { // avoid running the generator when inside of it, the while loop will process it once we unwind
                     generating = true;
-                    var qitem;
-                    while (qitem = queue.remove()) {
-                        var result, args = qitem.complete;
+                    while (complete) {
+                        var result, args = complete; complete = undefined;
                         if (throwing) {
                             if (args[0]) result = iterator.throw(extendedStack(args[0]));
                             else         result = iterator.next(args[1])
                         } else           result = iterator.next(args);
                         if (result.done && lastfn)
                             lastfn(null, result.value);
-                        else if (result.value && result.value != resume)
+                        else if (result.value)
                             if (result.value.then instanceof Function)
                                 handlePromise(result.value);
                             else if (result.value instanceof Function)
@@ -116,7 +110,7 @@ function genny(gen) {
                                 handleParallel(result.value);
                     }
                 } catch (e) {
-                    queue.empty();
+                    complete = null;
                     if (lastfn) return lastfn(e);
                     else throw e;
                 } finally {

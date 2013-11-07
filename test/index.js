@@ -62,11 +62,9 @@ t.test(
 t.test(
     "correct parallel order",
     genny.fn(function* (t, resume) {
-        normal(resume());
-        setImmediate(resume());
-        var ok = yield resume, nothing = yield resume;
-        t.equals(ok, 'OK')
-        t.equals(nothing, undefined);
+        var ok = yield [normal, setImmediate];
+        t.equals(ok[0], 'OK')
+        t.equals(ok[1], undefined);
         t.end();
     }));
 
