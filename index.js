@@ -94,15 +94,16 @@ function genny(gen) {
                             if (args[0]) result = iterator.throw(extendedStack(args[0]));
                             else         result = iterator.next(args[1])
                         } else           result = iterator.next(args);
+                        var value = result.value;
                         if (result.done && lastfn)
-                            lastfn(null, result.value);
-                        else if (result.value)
-                            if (result.value.then instanceof Function)
-                                handlePromise(result.value, resume());
-                            else if (result.value instanceof Function)
-                                result.value(resume()); // handle thunks
-                            else if (result.value instanceof Array)
-                                handleParallel(result.value, resume());
+                            lastfn(null, value);
+                        else if (value)
+                            if (value.then instanceof Function)
+                                handlePromise(value, resume());
+                            else if (value instanceof Function)
+                                value(resume()); // handle thunks
+                            else if (value instanceof Array)
+                                handleParallel(value, resume());
                     }
                 } catch (e) {
                     complete = null;
