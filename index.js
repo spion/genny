@@ -88,7 +88,7 @@ function genny(gen) {
 
                 if (generating === false) try { // avoid running the generator when inside of it, the while loop will process it once we unwind
                     generating = true;
-                    while (complete) {
+                    do {
                         var result, args = complete; complete = void 0;
                         if (throwing) {
                             if (args[0]) result = iterator.throw(extendedStack(args[0]));
@@ -104,7 +104,7 @@ function genny(gen) {
                                 value(resume()); // handle thunks
                             else if (value instanceof Array)
                                 handleParallel(value, resume());
-                    }
+                    } while (complete);
                 } catch (e) {
                     complete = null;
                     if (lastfn) return lastfn(e);
