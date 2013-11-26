@@ -35,7 +35,6 @@ function genny(gen) {
         if (!(lastfn instanceof Function))
             lastfn = null;
 
-        var iterator;
 
         function handleParallel(array) {
             var pending = array.length,
@@ -140,7 +139,7 @@ function genny(gen) {
             args[args.length - 1] = resume;
         else
             args.push(resume);
-        iterator = gen.apply(this, args);
+        var iterator = gen.apply(this, args);
 
         // send something undefined to start the generator
         createResumer(true, null)(null, undefined);
