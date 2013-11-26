@@ -79,13 +79,9 @@ function genny(gen) {
         if (!(lastfn instanceof Function))
             lastfn = null;
 
-        function identity(err) { return err; }
-
-        // TODO: var contents = yield files.map(function(file) { return genny.pyield(fs.readFile(file, resume())); });
-
         var complete, generating = false;
         function createResumer(throwing, previous) {
-            var extendedStack = exports.longStackSupport ? makeStackExtender(previous) : identity;
+            var extendedStack = exports.longStackSupport ? makeStackExtender(previous) : function identity(err) { return err; };
 
             return function _resume(err, res) {
                 if (complete === null) return; // item was emptied when throwing, so we can ignore it
