@@ -36,6 +36,12 @@ function genny(gen) {
             lastfn = null;
 
         function handleParallel(array, resumer) {
+            if (!array.every(function(f){
+                return f && (f      instanceof Function
+                          || f.then instanceof Function)
+            }))
+                return;
+
             var pending = array.length,
                 results = new Array(pending);
 
