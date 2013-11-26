@@ -135,7 +135,7 @@ function genny(gen) {
             args[args.length - 1] = resume;
         else
             args.push(resume);
-        var iterator = gen.apply(this, args);
+        var iterator = gen.apply(this, args); args = void 0;
 
         // send something undefined to start the generator
         createResumer(true, null)(null, void 0);
