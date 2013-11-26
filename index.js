@@ -86,14 +86,14 @@ function genny(gen) {
 
             return function _resume(err, res) {
                 if (complete === null) return; // item was emptied when throwing, so we can ignore it
-                if (complete !== undefined) throw extendedStack(new Error("callback already called"));
+                if (complete !== void 0) throw extendedStack(new Error("callback already called"));
 
                 complete = arguments;
 
                 if (generating === false) try { // avoid running the generator when inside of it, the while loop will process it once we unwind
                     generating = true;
                     while (complete) {
-                        var result, args = complete; complete = undefined;
+                        var result, args = complete; complete = void 0;
                         if (throwing) {
                             if (args[0]) result = iterator.throw(extendedStack(args[0]));
                             else         result = iterator.next(args[1])
@@ -142,7 +142,7 @@ function genny(gen) {
         var iterator = gen.apply(this, args);
 
         // send something undefined to start the generator
-        createResumer(true, null)(null, undefined);
+        createResumer(true, null)(null, void 0);
     }
 }
 
