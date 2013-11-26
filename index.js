@@ -24,6 +24,50 @@ function makeStackExtender(previous, noheader) {
     }
 }
 
+function handleParallel(array, resumer) {
+    if (!array.every(function(f){
+        return f && (f      instanceof Function
+                     || f.then instanceof Function)
+    }))
+        return;
+
+    var pending = array.length,
+    results = new Array(pending);
+
+    var errored = false;
+    function handler(k) {
+        var called = false;
+        return function(err, res) {
+            if (errored) return;
+            if (err) {
+                errored = true;
+                return resumer(err);
+            }
+            if (called) {
+                errored = true;
+                return resumer(new Error("thunk already called"));
+            }
+            called = true;
+            results[k] = res;
+            if (!--pending)
+                resumer(null, results);
+        }
+    }
+    array.forEach(function(item, k) {
+        if (item.then instanceof Function)
+            handlePromise(item, handler(k));
+        else if (item instanceof Function)
+            item(handler(k));
+    });
+}
+
+function handlePromise(promise, handler) {
+    promise.then(function promiseSuccess(result) {
+        handler(null, result)
+    }, function promiseError(err) {
+        handler(err);
+    });
+}
 
 function genny(gen) {
     return function start() {
@@ -35,52 +79,9 @@ function genny(gen) {
         if (!(lastfn instanceof Function))
             lastfn = null;
 
-        function handleParallel(array, resumer) {
-            if (!array.every(function(f){
-                return f && (f      instanceof Function
-                          || f.then instanceof Function)
-            }))
-                return;
-
-            var pending = array.length,
-                results = new Array(pending);
-
-            var errored = false;
-            function handler(k) {
-                var called = false;
-                return function(err, res) {
-                    if (errored) return;
-                    if (called) {
-                        errored = true;
-                        return resumer(new Error("thunk already called"));
-                    }
-                    if (err) {
-                        errored = true;
-                        return resumer(err);
-                    }
-                    called = true;
-                    results[k] = res;
-                    if (!--pending)
-                        resumer(null, results);
-                }
-            }
-            array.forEach(function(item, k) {
-                if (item.then instanceof Function)
-                    handlePromise(item, handler(k));
-                else if (item instanceof Function)
-                    item(handler(k));
-            });
-        }
-
-        function handlePromise(promise, handler) {
-            promise.then(function promiseSuccess(result) {
-                handler(null, result)
-            }, function promiseError(err) {
-                handler(err);
-            });
-        }
-
         function identity(err) { return err; }
+
+        // TODO: var contents = yield files.map(function(file) { return genny.pyield(fs.readFile(file, resume())); });
 
         var complete, generating = false;
         function createResumer(throwing, previous) {
@@ -137,7 +138,7 @@ function genny(gen) {
             };
             return resume;
         }
-        var resume = makeResume();
+        var resume = makeResume(null);
         if (lastfn)
             args[args.length - 1] = resume;
         else
@@ -145,7 +146,7 @@ function genny(gen) {
         var iterator = gen.apply(this, args); args = void 0;
 
         // send something undefined to start the generator
-        createResumer(true, null)(null, void 0);
+        resume()(null, void 0);
     }
 }
 
