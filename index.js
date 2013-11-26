@@ -35,12 +35,9 @@ function genny(gen) {
         if (!(lastfn instanceof Function))
             lastfn = null;
 
-
-        function handleParallel(array) {
+        function handleParallel(array, resumer) {
             var pending = array.length,
                 results = new Array(pending);
-
-            var resumer = resume();
 
             var errored = false;
             function handler(k) {
@@ -70,7 +67,6 @@ function genny(gen) {
         }
 
         function handlePromise(promise, handler) {
-            var handler = handler || resume();
             promise.then(function promiseSuccess(result) {
                 handler(null, result)
             }, function promiseError(err) {
@@ -102,11 +98,11 @@ function genny(gen) {
                             lastfn(null, result.value);
                         else if (result.value)
                             if (result.value.then instanceof Function)
-                                handlePromise(result.value);
+                                handlePromise(result.value, resume());
                             else if (result.value instanceof Function)
                                 result.value(resume()); // handle thunks
                             else if (result.value instanceof Array)
-                                handleParallel(result.value);
+                                handleParallel(result.value, resume());
                     }
                 } catch (e) {
                     complete = null;
