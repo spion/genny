@@ -83,7 +83,7 @@ function genny(gen) {
         function createResumer(throwing, previous) {
             var extendedStack = exports.longStackSupport ? makeStackExtender(previous) : function identity(err) { return err; };
 
-            return function _resume(err, res) {
+            return function _resume(/*err, res*/) {
                 if (complete === null) return; // item was emptied when throwing, so we can ignore it
                 if (complete !== void 0) throw extendedStack(new Error("callback already called"));
 
