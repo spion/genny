@@ -87,16 +87,13 @@ function genny(gen) {
                 if (complete === null) return; // item was emptied when throwing, so we can ignore it
                 if (complete !== void 0) throw extendedStack(new Error("callback already called"));
 
-                complete = arguments;
+                complete = throwing ? arguments : [null, arguments];
 
                 if (generating === false) try { // avoid running the generator when inside of it, the while loop will process it once we unwind
                     generating = true;
                     do {
-                        var result, args = complete; complete = void 0;
-                        if (throwing) {
-                            if (args[0]) result = iterator.throw(extendedStack(args[0]));
-                            else         result = iterator.next(args[1])
-                        } else           result = iterator.next(args);
+                        var args = complete; complete = void 0;
+                        var result = args[0] ? iterator.throw(extendedStack(args[0])) : iterator.next(args[1]);
                         var value = result.value;
                         if (result.done && lastfn)
                             lastfn(null, value);
