@@ -112,6 +112,22 @@ genny.run(function* (resume) {
 });
 ```
 
+You may also give yield a thunk (a function that take callback) or a promise
+
+```js
+genny.run(function* () {
+    var first = yield
+      function(callback) { fs.readFile("test1.js", callback); };
+    var files = yield [
+      function(callback) { fs.readFile("test2.js", callback); },
+      function(callback) { fs.readFile("test3.js", callback); },
+    ];
+    return first + files[0].toString() + files[1].toString();
+});
+```
+
+or an array of these which will be run in parallel.
+
 ## creating callback functions
 
 You can also use `genny.fn` instead to create a function which
