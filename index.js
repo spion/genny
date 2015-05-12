@@ -79,20 +79,20 @@ function genny(gen) {
         if (!(lastfn instanceof Function))
             lastfn = null;
 
-        var complete, generating = false;
-        function createResumer(throwing, previous) {
+        var complete = [], r = 0, generating = false;
+        function createResumer(throwing, previous, i) {
             var extendedStack = exports.longStackSupport ? makeStackExtender(previous) : function identity(err) { return err; };
 
             return function _resume(/*err, res*/) {
-                if (complete === null) return; // item was emptied when throwing, so we can ignore it
-                if (complete !== void 0) throw extendedStack(new Error("callback already called"));
+                if (i in complete)
+                    throw extendedStack(new Error("callback["+(i-1)+"] already called"));
 
-                complete = throwing ? arguments : [null, arguments];
+                complete[i] = throwing ? arguments : [null, arguments];
 
                 if (generating === false) try { // avoid running the generator when inside of it, the while loop will process it once we unwind
                     generating = true;
-                    do {
-                        var args = complete; complete = void 0;
+                    while (r in complete) {
+                        var args = complete[r]; complete[r++] = void 0;
                         var result = args[0] ? iterator.throw(extendedStack(args[0])) : iterator.next(args[1]);
                         var value = result.value;
                         if (result.done && lastfn)
@@ -104,9 +104,8 @@ function genny(gen) {
                                 value(resume()); // handle thunks
                             else if (value instanceof Array)
                                 handleParallel(value, resume());
-                    } while (complete);
+                    }
                 } catch (e) {
-                    complete = null;
                     if (lastfn) return lastfn(e);
                     else throw e;
                 } finally {
@@ -118,10 +117,10 @@ function genny(gen) {
 
         function makeResume(previous) {
             var resume = function() {
-                return createResumer(true, previous);
+                return createResumer(true, previous, complete.length++);
             }
             resume.nothrow = function() {
-               return createResumer(false, previous);
+                return createResumer(false, previous, complete.length++);
             }
             resume.gen = function() {
                 var extendedStack;

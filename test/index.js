@@ -26,10 +26,10 @@ function evil(cb) {
     });
 }
 
-function normal(cb) {
+function normal(cb,r,t) {
     setTimeout(function() {
-        cb(null, "OK")
-    }, 30);
+        cb(null, r||"OK")
+    }, t||30);
 }
 
 function multiresult(cb) {
@@ -60,7 +60,49 @@ t.test(
 
 
 t.test(
-    "correct parallel order",
+    "correct parallel order even when callback immediately called in the same tick",
+    genny.fn(function* (t, resume) {
+        normal(resume(),"1 OK");
+        nowait("2 OK", resume());
+        normal(resume(), "3 OK", 0);
+        t.equals(yield, "1 OK")
+        t.equals(yield, "2 OK")
+        t.equals(yield, "3 OK");
+        t.end();
+    }));
+
+t.test(
+    "correct parallel queueing",
+    genny.fn(function* (t, resume) {
+        var times = [40,30,10,50,33,5];
+        for (var i in times)
+            normal(resume(), times[i] + " OK", times[i]);
+        for (var i in times)
+            t.equals(times[i] + " OK", yield);
+        t.end();
+    }));
+
+t.test(
+    "correct parallel order when things throw",
+    genny.fn(function* (t, resume) {
+        normal(resume(), "1 OK");
+        nowait("2 OK", resume());
+        throws(t, "3 NOK", resume());
+        normal(resume(),"4 OK");
+        t.equals(yield, "1 OK")
+        t.equals(yield, "2 OK")
+        try {
+            yield;
+            t.equals(0,1);
+        } catch (e) {
+            t.equals(e, "3 NOK", "catches things thrown");
+        }
+        t.equals(yield, "4 OK")
+        t.end();
+    }));
+
+t.test(
+    "correct parallel order (yield [])",
     genny.fn(function* (t, resume) {
         var ok = yield [normal, setImmediate];
         t.equals(ok[0], 'OK')

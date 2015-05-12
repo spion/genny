@@ -82,6 +82,36 @@ genny.run(function* (resume) {
 });
 ```
 
+## running things in parallel
+
+If you need to run multiple operations in parallel, don't yield immediately:
+
+```js
+genny.run(function* (resume) {
+    fs.readFile("test.js", resume());
+    fs.readFile("test2.js", resume());
+    var file1 = yield, file2 = yield;
+    return file1.toString() + file2.toString();
+});
+```
+
+The order of yield results is guaranteed to be the same as the order of the
+`resume()` callback constructors. Feel free to use it in loops too:
+
+```js
+genny.run(function* (resume) {
+    // read files in parallel
+    for (var k = 0; k < files.length; ++k)
+        fs.readFile(file[k], resume());
+
+    // wait for all of them to be read
+    var content = [];
+    for (var k = 0; k < files.length; ++k)
+        content.push(yield);
+
+});
+```
+
 ## creating callback functions
 
 You can also use `genny.fn` instead to create a function which
