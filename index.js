@@ -2,13 +2,6 @@
 
 var slice = [].slice;
 
-var hasSend = !!(function* () { yield 1; })().send;
-
-
-var wq = require('./lib/work-queue'),
-    WorkQueue = wq.WorkQueue,
-    WorkItem = wq.WorkItem;
-
 function stackFilter(stack) {
     return stack.split('\n').slice(1,4).filter(function(l) {
         return !~l.indexOf(__filename)
@@ -25,34 +18,56 @@ function makeStackExtender(previous, noheader) {
             if (!noheader) err.stack += '\nFrom generator:'
             err.stack += '\n' + stackFilter(asyncStack);
         }
-        if (previous) 
+        if (previous)
             err = previous(err);
        return err;
     }
 }
 
+function handleParallel(array, resumer) {
+    if (!array.every(function(f){
+        return f && (f      instanceof Function
+                     || f.then instanceof Function)
+    }))
+        return;
 
-function tryProcessPending(processPending, queue, lastfn) {
-    try {
-        processPending();
-    } catch (e) {
-        if (/generator/i.test(e.message)) return;
-        queue.empty();
-        if (lastfn) return lastfn(e);
-        else throw e;
+    var pending = array.length,
+    results = new Array(pending);
+
+    var errored = false;
+    function handler(k) {
+        var called = false;
+        return function(err, res) {
+            if (errored) return;
+            if (err) {
+                errored = true;
+                return resumer(err);
+            }
+            if (called) {
+                errored = true;
+                return resumer(new Error("thunk already called"));
+            }
+            called = true;
+            results[k] = res;
+            if (!--pending)
+                resumer(null, results);
+        }
     }
-}
-function throwAt(iterator, err, callback) {
-    try {
-        iterator.throw(err);
-    } catch (e) {
-        if (callback) return callback(e); 
-        else throw e; 
-    }
+    array.forEach(function(item, k) {
+        if (item.then instanceof Function)
+            handlePromise(item, handler(k));
+        else if (item instanceof Function)
+            item(handler(k));
+    });
 }
 
-
-
+function handlePromise(promise, handler) {
+    promise.then(function promiseSuccess(result) {
+        handler(null, result)
+    }, function promiseError(err) {
+        handler(err);
+    });
+}
 
 function genny(gen) {
     return function start() {
@@ -63,137 +78,67 @@ function genny(gen) {
 
         if (!(lastfn instanceof Function))
             lastfn = null;
-        
-        var iterator;
-        var queue = new WorkQueue();
 
+        var complete = [], r = 0, generating = false;
+        function createResumer(throwing, previous, i) {
+            var extendedStack = exports.longStackSupport ? makeStackExtender(previous) : function identity(err) { return err; };
 
-        function processPending() {
-            var item, result;
-            while (queue.check()) {
-                var val = queue.next.value;
-                if (hasSend && item.value !== undefined) 
-                    result = iterator.send(val);
-                else 
-                    result = iterator.next(val);
+            return function _resume(/*err, res*/) {
+                if (i in complete)
+                    throw extendedStack(new Error("callback["+(i-1)+"] already called"));
 
-                queue.advance();                
-                if (result.done && lastfn)
-                    lastfn(null, result.value);
-                else if (result.value && result.value != resume) 
-                    // handle promises
-                    if (result.value.then instanceof Function) 
-                        handlePromise(result.value);
-                    // handle thunks
-                    else if (result.value instanceof Function)
-                        result.value(resume());
-                    else if (result.value instanceof Array)
-                        handleParallel(result.value);
+                complete[i] = throwing ? arguments : [null, arguments];
 
-            }
-        }
-
-        function handleParallel(array) {
-            var pending = array.length,
-                results = new Array(pending);
-
-            var resumer = resume();
-
-            var errored = false;
-            function handler(k) {
-                var called = false;
-                return function(err, res) {
-                    if (errored) return;
-                    if (called) {
-                        errored = true;
-                        return resumer(new Error("thunk already called"));
+                if (generating === false) try { // avoid running the generator when inside of it, the while loop will process it once we unwind
+                    generating = true;
+                    while (r in complete) {
+                        var args = complete[r]; complete[r++] = void 0;
+                        var result = args[0] ? iterator.throw(extendedStack(args[0])) : iterator.next(args[1]);
+                        var value = result.value;
+                        if (result.done && lastfn)
+                            lastfn(null, value);
+                        else if (value)
+                            if (value.then instanceof Function)
+                                handlePromise(value, resume());
+                            else if (value instanceof Function)
+                                value(resume()); // handle thunks
+                            else if (value instanceof Array)
+                                handleParallel(value, resume());
                     }
-                    if (err) {
-                        errored = true;
-                        return resumer(err);
-                    }
-                    called = true;
-                    results[k] = res;
-                    if (!--pending)
-                        resumer(null, results);
+                } catch (e) {
+                    if (lastfn) return lastfn(e);
+                    else throw e;
+                } finally {
+                    generating = false;
                 }
-            }
-            array.forEach(function(item, k) {
-                if (item.then instanceof Function) 
-                    handlePromise(item, handler(k));
-                else if (item instanceof Function)
-                    item(handler(k));
-            });
-        }
-
-        function handlePromise(promise, handler) {
-            var handler = handler || resume();
-            promise.then(function promiseSuccess(result) {
-                handler(null, result)
-            }, function promiseError(err) {
-                handler(err);
-            }); 
-        }
-
-        function identity(err) { return err; }
- 
-        function createResumer(opt) {
-            var extendedStack;
-            if (exports.longStackSupport) 
-                extendedStack = makeStackExtender(opt.previous);
-            else 
-                extendedStack = identity;
-
-            var item = new WorkItem();
-            queue.add(item);
-
-            return function resume(err, res) {
-
-                if (item.complete) 
-                    return throwAt(iterator, 
-                        extendedStack(new Error("callback already called")), 
-                        lastfn);
-
-                item.complete = true;
-                if (err && opt.throwing) {
-                    queue.empty();
-                    return throwAt(iterator, extendedStack(err), lastfn);
-                }
-
-                item.value = opt.throwing ? res : slice.call(arguments);
-                tryProcessPending(processPending, queue, lastfn);
                 //extendedStack = null;
             }
         }
 
         function makeResume(previous) {
-            var resume = function() { 
-                return createResumer({throwing: true, previous: previous});
+            var resume = function() {
+                return createResumer(true, previous, complete.length++);
             }
             resume.nothrow = function() {
-               return createResumer({throwing: false, previous: previous});
+                return createResumer(false, previous, complete.length++);
             }
             resume.gen = function() {
                 var extendedStack;
-                if (exports.longStackSupport) 
+                if (exports.longStackSupport)
                     extendedStack = makeStackExtender(previous, true);
                 return makeResume(extendedStack);
             };
             return resume;
         }
-        var resume = makeResume();
-        if (lastfn) 
+        var resume = makeResume(null);
+        if (lastfn)
             args[args.length - 1] = resume;
         else
             args.push(resume);
-        iterator = gen.apply(this, args);
+        var iterator = gen.apply(this, args); args = void 0;
 
-        // first item sent to generator is undefined
-        var item = new WorkItem()
-        item.complete = true;
-        queue.add(item); 
-        tryProcessPending(processPending, queue, lastfn);
-       
+        // send something undefined to start the generator
+        resume()(null, void 0);
     }
 }
 
@@ -208,7 +153,7 @@ exports.listener = function(gen) {
     return function() {
         var args = [].slice.call(arguments);
         args.push(function ignoreListener(err, res) {});
-        fn.apply(this, args);        
+        fn.apply(this, args);
     }
 }
 
@@ -216,10 +161,10 @@ exports.middleware = function(gen) {
     var fn = genny(gen);
     return function(req, res, next) {
         fn(req, res, function(err, res) {
-            if (next) 
-                if (err) 
+            if (next)
+                if (err)
                     next(err);
-                else if (res === true) 
+                else if (res === true)
                     next();
         });
     }
